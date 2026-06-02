@@ -1,44 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
-  <title>Page Title</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thực Đơn - Suối Cò Sáu Hai Sáu</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-  <style>
-   <body> {
-      background-image: url("/index.html/download.jpg");
+        body {
+            background-image: url("/index.html/download.jpg");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #f4f6f4;
+            color: #2b2b2b;
+            line-height: 1.6;
+            padding: 30px 16px;
+        }
 
-        {
-        background-image: url('images/background.jpg');
-        background-size: cover;
-        /* Phóng to ảnh vừa vặn toàn màn hình */
-        background-repeat: no-repeat;
-        /* Không lặp lại ảnh nền */
-        background-position: center;
-        /* Canh giữa ảnh nền */
-        background-attachment: fixed;
-        /* Giữ ảnh cố định khi cuộn trang */
-      }
-  </style>
- <a img src="/index.html/z7834498891264_7ad421418ac6b617b52de247cabeec1c.jpg"></a>
-  <a href="/index.html/2aOboQX0D1yampBd5BQ44ErlD7rdLTxEYu5GydzU.jpg">
-    <img src="/index.html/2aOboQX0D1yampBd5BQ44ErlD7rdLTxEYu5GydzU.jpg" ;
-      style="display: block; margin-left: auto; margin-right: auto; width: 50%;"></a>
-  <br>
-  <a href="/index.html/2aOboQWz6qq8XszTSpTjPgH6trrWxmSSiyI29Hk0.jpg"><img
-      src="/index.html/2aOboQWz6qq8XszTSpTjPgH6trrWxmSSiyI29Hk0.jpg" ;
-      style="display: block; margin-left: auto; margin-right: auto; width: 50%;"></a>
-  <a href="/index.html/2aOboQWz7skIwFL7fkRAfeDlwGDZiwp3LWa9Hy8O.jpg"> <img
-      src="/index.html/2aOboQWz7skIwFL7fkRAfeDlwGDZiwp3LWa9Hy8O.jpg" ;
-      style="display: block; margin-left: auto; margin-right: auto; width: 50%;"></a>
-  <a href="/index.html/2aOboQWz5sw8OOFXwGsaNchJd8HpECUjzyj56bh2.jpg"><img
-      src="/index.html/2aOboQWz5sw8OOFXwGsaNchJd8HpECUjzyj56bh2.jpg" ;
-      style="display: block; margin-left: auto; margin-right: auto; width: 50%;"></a>
-  <a href="index.html/0b00d0c0-5317-41c7-baaf-364ce44c6a78.jpg">
-    <img src="index.html/0b00d0c0-5317-41c7-baaf-364ce44c6a78.jpg" ;
-      style="display: block; margin-left: auto; margin-right: auto; width: 50%;"></a>
-  <img src="/index.html/z7834498720376_0b7a0e5440341670175802a6cbe5a4ea.jpg">
-    </head>
-  </body>
+        .menu-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c5e3b;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #5f6b62;
+            margin-bottom: 24px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: #2c5e3b;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .menu-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .menu-gallery a {
+            display: block;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-gallery img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .menu-gallery a:hover img {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="menu-wrap">
+        <a href="/haj.html" class="back-link">← Quay lại trang chủ</a>
+        <h1>Thực Đơn</h1>
+        <p class="subtitle">Đặc sản Ba Vì tươi ngon tại Suối Cò Sáu Hai Sáu</p>
+
+        <div class="menu-gallery">
+            <a href="/index.html/z7834498891264_7ad421418ac6b617b52de247cabeec1c.jpg">
+                <img src="/index.html/z7834498891264_7ad421418ac6b617b52de247cabeec1c.jpg" alt="Thực đơn">
+            </a>
+            <a href="/index.html/2aOboQX0D1yampBd5BQ44ErlD7rdLTxEYu5GydzU.jpg">
+                <img src="/index.html/2aOboQX0D1yampBd5BQ44ErlD7rdLTxEYu5GydzU.jpg" alt="Món ăn">
+            </a>
+            <a href="/index.html/2aOboQWz6qq8XszTSpTjPgH6trrWxmSSiyI29Hk0.jpg">
+                <img src="/index.html/2aOboQWz6qq8XszTSpTjPgH6trrWxmSSiyI29Hk0.jpg" alt="Món ăn">
+            </a>
+            <a href="/index.html/2aOboQWz7skIwFL7fkRAfeDlwGDZiwp3LWa9Hy8O.jpg">
+                <img src="/index.html/2aOboQWz7skIwFL7fkRAfeDlwGDZiwp3LWa9Hy8O.jpg" alt="Món ăn">
+            </a>
+            <a href="/index.html/2aOboQWz5sw8OOFXwGsaNchJd8HpECUjzyj56bh2.jpg">
+                <img src="/index.html/2aOboQWz5sw8OOFXwGsaNchJd8HpECUjzyj56bh2.jpg" alt="Món ăn">
+            </a>
+            <a href="/index.html/0b00d0c0-5317-41c7-baaf-364ce44c6a78.jpg">
+                <img src="/index.html/0b00d0c0-5317-41c7-baaf-364ce44c6a78.jpg" alt="Món ăn">
+            </a>
+            <a href="/index.html/z7834498720376_0b7a0e5440341670175802a6cbe5a4ea.jpg">
+                <img src="/index.html/z7834498720376_0b7a0e5440341670175802a6cbe5a4ea.jpg" alt="Món ăn">
+            </a>
+        </div>
+    </div>
+</body>
 
 </html>
