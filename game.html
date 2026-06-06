@@ -1434,7 +1434,7 @@ function updateEnemies(){
 //  BOSS
 // ══════════════════════════════════════════════════
 function spawnBoss(){
-  boss={x:W/2,y:-100,vx:2,vy:0,w:110,h:85,hp:120+level*30,maxHp:120+level*30,pattern:0,ptTimer:0,shootCd:0,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0};
+  boss={x:W/2,y:-100,vx:2,vy:0,w:110,h:85,hp:120+level*30,maxHp:120+level*30,pattern:0,ptTimer:0,shootCd:60,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0,burstActive:false,burstTimer:0,burstCd:0};
   bossBarEl.style.display='block';
 }
 function drawBoss(){
@@ -1478,54 +1478,56 @@ function updateBoss(){
         b.x+=b.vx;if(b.x<b.w/2+10||b.x>W-b.w/2-10)b.vx*=-1;break;
     }
 
-    // ── Boss shooting — focused on player + spread combos ──
-    b.shootCd--;
-    if(b.shootCd<=0){
-      const rate=b.enraged?9:18;
-      b.shootCd=Math.max(5,rate-level*2);
-      const hr=b.hp/b.maxHp;
-      // aimed vector toward player
-      const pdx=P.x-b.x, pdy=P.y-b.y, pd=Math.hypot(pdx,pdy)||1;
-      const aimed={vx:pdx/pd, vy:pdy/pd};
-
-      if(hr>.7){
-        // PHASE 1 — 3-cannon focused burst at player + small spread
-        [-35,0,35].forEach(cx=>{
-          enemyBullets.push({x:b.x+cx,y:b.y+b.h/2,vx:aimed.vx*8,vy:aimed.vy*8,r:5.5,col:'#f0a'});
-        });
-        // narrow spread around player direction
-        for(let a=-18;a<=18;a+=9){
-          const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
-          enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f84'});
-        }
-      } else if(hr>.4){
-        // PHASE 2 — rapid triple focused burst + side shots
-        for(let i=0;i<3;i++){
-          setTimeout(()=>{
-            if(!boss)return;
-            enemyBullets.push({x:boss.x,y:boss.y+boss.h/2,vx:aimed.vx*(8+i),vy:aimed.vy*(8+i),r:6,col:'#f0a'});
-          }, i*80);
-        }
-        // wide spread
-        for(let a=-50;a<=50;a+=16.7){
-          const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
-          enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f44'});
-        }
-        // side suppression
-        enemyBullets.push({x:b.x-b.w/2,y:b.y,vx:-7,vy:aimed.vy*5,r:4,col:'#f84'});
-        enemyBullets.push({x:b.x+b.w/2,y:b.y,vx: 7,vy:aimed.vy*5,r:4,col:'#f84'});
+    // ── Boss shooting — burst mode: 3s rest → 5s burst → repeat ──
+    if(!b.burstActive){
+      b.shootCd--;
+      if(b.shootCd<=0){
+        b.burstActive=true;
+        b.burstTimer=b.enraged?240:300; // burst lasts 4s/5s
+        b.burstCd=0;
+        beep(200,.06,'square',.06);
+      }
+    } else {
+      b.burstTimer--;
+      if(b.burstTimer<=0){
+        b.burstActive=false;
+        b.shootCd=b.enraged?120:180; // 2s/3s rest between bursts
       } else {
-        // PHASE 3 ENRAGED — focused burst + full circle simultaneously
-        // Direct 5-shot aimed barrage
-        for(let i=0;i<5;i++){
-          const jitter=(Math.random()-.5)*0.15;
-          enemyBullets.push({x:b.x,y:b.y,vx:(aimed.vx+jitter)*(7+i*.5),vy:(aimed.vy+jitter)*(7+i*.5),r:5,col:'#f00'});
-        }
-        // 360 circle
-        const n=b.enraged?20:14;
-        for(let i=0;i<n;i++){
-          const r=(i/n)*Math.PI*2+b.ptTimer*.07, s=b.enraged?7:5.5;
-          enemyBullets.push({x:b.x,y:b.y,vx:Math.cos(r)*s,vy:Math.sin(r)*s,r:5,col:'#f00'});
+        b.burstCd--;
+        if(b.burstCd<=0){
+          b.burstCd=b.enraged?10:16; // fire rate during burst
+          const hr=b.hp/b.maxHp;
+          const pdx=P.x-b.x, pdy=P.y-b.y, pd=Math.hypot(pdx,pdy)||1;
+          const aimed={vx:pdx/pd, vy:pdy/pd};
+          if(hr>.7){
+            // Phase 1 — 3-cannon aimed shots
+            [-35,0,35].forEach(cx=>{
+              enemyBullets.push({x:b.x+cx,y:b.y+b.h/2,vx:aimed.vx*8,vy:aimed.vy*8,r:5.5,col:'#f0a'});
+            });
+            for(let a=-18;a<=18;a+=18){
+              const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
+              enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f84'});
+            }
+          } else if(hr>.4){
+            // Phase 2 — aimed burst + flanking shots
+            enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:aimed.vx*9,vy:aimed.vy*9,r:6,col:'#f0a'});
+            for(let a=-40;a<=40;a+=20){
+              const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
+              enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f44'});
+            }
+            enemyBullets.push({x:b.x-b.w/2,y:b.y,vx:-7,vy:aimed.vy*5,r:4,col:'#f84'});
+            enemyBullets.push({x:b.x+b.w/2,y:b.y,vx: 7,vy:aimed.vy*5,r:4,col:'#f84'});
+          } else {
+            // Phase 3 — aimed barrage + 360 ring
+            const jitter=(Math.random()-.5)*0.15;
+            enemyBullets.push({x:b.x,y:b.y,vx:(aimed.vx+jitter)*9,vy:(aimed.vy+jitter)*9,r:6,col:'#f00'});
+            enemyBullets.push({x:b.x,y:b.y,vx:(aimed.vx-jitter)*7,vy:(aimed.vy-jitter)*7,r:5,col:'#f00'});
+            const n=b.enraged?12:8;
+            for(let i=0;i<n;i++){
+              const r=(i/n)*Math.PI*2+b.burstTimer*.04;
+              enemyBullets.push({x:b.x,y:b.y,vx:Math.cos(r)*(b.enraged?6:5),vy:Math.sin(r)*(b.enraged?6:5),r:4.5,col:'#f44'});
+            }
+          }
         }
       }
     }
@@ -1576,6 +1578,29 @@ function hurtPlayer(dmg){
 // ── Level / messages ────────────────────────────────
 let formationTimer=0;
 let msgs=[];
+
+// ─── Structured wave system (Level 1: 5 geometric formations → boss) ───
+let waveNumber=0;       // 1–5 during play, 0 = not yet started
+let waveState='idle';   // idle | announcing | active | clearing | done
+let waveTimer=0;
+const TOTAL_WAVES=5;
+const WAVE_DATA=[
+  { title:'LINE FORMATION',     col:'#0ff',
+    slots:[{rx:-150,ry:0,t:'scout'},{rx:-75,ry:0,t:'scout'},{rx:0,ry:0,t:'scout'},{rx:75,ry:0,t:'scout'},{rx:150,ry:0,t:'scout'}],
+    vy:1.5 },
+  { title:'V WING',             col:'#ff0',
+    slots:[{rx:0,ry:0,t:'fighter'},{rx:-55,ry:35,t:'scout'},{rx:55,ry:35,t:'scout'},{rx:-110,ry:70,t:'scout'},{rx:110,ry:70,t:'scout'},{rx:-150,ry:105,t:'zigzag'},{rx:150,ry:105,t:'zigzag'}],
+    vy:1.4 },
+  { title:'DIAMOND',            col:'#f0a',
+    slots:[{rx:0,ry:-50,t:'scout'},{rx:-60,ry:-20,t:'zigzag'},{rx:60,ry:-20,t:'zigzag'},{rx:-95,ry:20,t:'fighter'},{rx:95,ry:20,t:'fighter'},{rx:-60,ry:60,t:'scout'},{rx:60,ry:60,t:'scout'},{rx:0,ry:110,t:'scout'}],
+    vy:1.3 },
+  { title:'CROSS FORMATION',    col:'#f80',
+    slots:[{rx:0,ry:-80,t:'scout'},{rx:0,ry:-40,t:'fighter'},{rx:0,ry:0,t:'heavy'},{rx:0,ry:40,t:'fighter'},{rx:0,ry:80,t:'scout'},{rx:-80,ry:0,t:'scout'},{rx:-40,ry:0,t:'scout'},{rx:40,ry:0,t:'scout'},{rx:80,ry:0,t:'scout'}],
+    vy:1.2 },
+  { title:'SPEARHEAD ASSAULT',  col:'#f44',
+    slots:[{rx:0,ry:70,t:'heavy'},{rx:-45,ry:30,t:'fighter'},{rx:45,ry:30,t:'fighter'},{rx:-90,ry:-10,t:'scout'},{rx:90,ry:-10,t:'scout'},{rx:-130,ry:-50,t:'kamikaze'},{rx:130,ry:-50,t:'kamikaze'}],
+    vy:1.3 }
+];
 function showMsg(t,c,d){msgs.push({t,c,life:d/16,y:H/2-30});}
 function drawMsgs(){
   msgs=msgs.filter(m=>{m.life--;m.y-=.5;ctx.globalAlpha=Math.min(1,m.life/20);ctx.font='bold 28px Courier New';ctx.fillStyle=m.c;ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor=m.c;ctx.shadowBlur=18;ctx.fillText(m.t,W/2,m.y);ctx.shadowBlur=0;ctx.globalAlpha=1;return m.life>0;});
@@ -1586,6 +1611,7 @@ function nextLevel(){
   level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=18+level*5;
   P.missiles=P.maxMissiles;P.bombs=Math.min(P.maxBombs,P.bombs+1);
   formationTimer=0;enemySpawnTimer=60;
+  waveNumber=0;waveState='idle';waveTimer=90;
   // refill heavy weapons partially
   Object.values(WEAPONS).forEach(w=>w.ammo=Math.min(w.maxAmmo,w.ammo+2));
   updateHUD();updateWepHUD();sfx.lvlUp();
@@ -1658,10 +1684,14 @@ function update(){
   updateCombo();
 
   if(!bossLevel){
-    enemySpawnTimer--;formationTimer--;
-    if(enemySpawnTimer<=0){spawnEnemy();enemySpawnTimer=Math.max(20,72-level*7)+Math.random()*15;enemiesSpawned++;}
-    if(formationTimer<=0){spawnFormation();formationTimer=260+Math.random()*100;enemiesSpawned+=4;}
-    if(enemiesSpawned>=enemiesForBoss){bossLevel=true;enemies=[];enemyBullets=[];eMines=[];eShells=[];eLaserBeams=[];spawnBoss();updateHUD();showMsg('⚠ BOSS APPEARS! ⚠','#f0a',3000);}
+    if(level===1){
+      handleWavesL1();
+    } else {
+      enemySpawnTimer--;formationTimer--;
+      if(enemySpawnTimer<=0){spawnEnemy();enemySpawnTimer=Math.max(20,72-level*7)+Math.random()*15;enemiesSpawned++;}
+      if(formationTimer<=0){spawnFormation();formationTimer=260+Math.random()*100;enemiesSpawned+=4;}
+      if(enemiesSpawned>=enemiesForBoss){bossLevel=true;enemies=[];enemyBullets=[];eMines=[];eShells=[];eLaserBeams=[];spawnBoss();updateHUD();showMsg('⚠ BOSS APPEARS! ⚠','#f0a',3000);}
+    }
   }
   snapPrev();
 }
@@ -1672,6 +1702,70 @@ function spawnFormation(){
               [{x:0,y:-40},{x:-40,y:0},{x:40,y:0},{x:-20,y:30},{x:20,y:30}]];
   const cfg=cfgs[Math.floor(Math.random()*cfgs.length)];
   cfg.forEach(p=>enemies.push({...ET['scout'],type:'scout',x:W/2+p.x,y:-60+p.y,vx:0,vy:1.8,hp:1,maxHp:1,shootCd:80,flash:0,heavy:false}));
+}
+
+function spawnWave(n){
+  const wd=WAVE_DATA[n-1];
+  wd.slots.forEach(s=>{
+    const t=s.t||'scout';
+    const tmpl=ET[t];
+    const x=Math.max(tmpl.w/2+5,Math.min(W-tmpl.w/2-5,W/2+s.rx));
+    const y=-80+s.ry;
+    const ex={
+      ...tmpl,type:t,x,y,
+      vx:t==='zigzag'?(Math.random()>.5?1:-1)*2.2:0,
+      vy:wd.vy||1.5,
+      hp:tmpl.hp,maxHp:tmpl.hp,
+      shootCd:Math.floor(Math.random()*60)+30,flash:0,
+      mineCd:tmpl.mineCd||0,mineRate:tmpl.mineRate||99999,
+      laserCd:tmpl.laserCd||0,laserRate:tmpl.laserRate||99999,chargeTimer:0,
+      shellCd:tmpl.shellCd||0,shellRate:tmpl.shellRate||99999,
+      spawnCd:tmpl.spawnCd||0,spawnRate:tmpl.spawnRate||99999,drones:0
+    };
+    enemies.push(ex);
+    if(t==='kamikaze')beep(800,.06,'square',.06,200);
+  });
+  beep(660,.12,'sine',.07,440);
+}
+
+function handleWavesL1(){
+  if(bossLevel)return;
+  switch(waveState){
+    case 'idle':
+      waveTimer--;
+      if(waveTimer<=0){
+        waveNumber=1;waveState='announcing';waveTimer=110;
+        msgs.push({t:`── WAVE 1 / ${TOTAL_WAVES} ──`,c:'#ff0',life:110,y:H/2-52});
+        msgs.push({t:WAVE_DATA[0].title,c:WAVE_DATA[0].col,life:90,y:H/2+2});
+      }
+      break;
+    case 'announcing':
+      waveTimer--;
+      if(waveTimer<=0){spawnWave(waveNumber);waveState='active';}
+      break;
+    case 'active':
+      if(enemies.length===0){
+        if(waveNumber>=TOTAL_WAVES){
+          waveState='done';bossLevel=true;
+          enemyBullets=[];eMines=[];eShells=[];eLaserBeams=[];
+          spawnBoss();updateHUD();showMsg('⚠ BOSS APPEARS! ⚠','#f0a',3000);
+        } else {
+          waveState='clearing';waveTimer=130;
+          msgs.push({t:'✓ WAVE CLEARED!',c:'#0f8',life:90,y:H/2-20});
+        }
+      }
+      break;
+    case 'clearing':
+      waveTimer--;
+      if(waveTimer<=0){
+        waveNumber++;waveState='announcing';waveTimer=100;
+        const wd=WAVE_DATA[waveNumber-1];
+        msgs.push({t:`── WAVE ${waveNumber} / ${TOTAL_WAVES} ──`,c:'#ff0',life:110,y:H/2-52});
+        msgs.push({t:wd.title,c:wd.col,life:90,y:H/2+2});
+      }
+      break;
+    case 'done': break;
+  }
 }
 
 function render(){
@@ -1697,6 +1791,21 @@ function render(){
     ctx.fillStyle='#ff0aa';ctx.font='10px Courier New';ctx.fillText(`POW LV${P.powerLevel}`,14,H-34);
   }
   if(P.dashCd>0){const pct=1-P.dashCd/55;ctx.fillStyle='rgba(0,255,255,.5)';ctx.fillRect(W-66,H-20,52*pct,3);}
+  // Wave progress dots (level 1 only)
+  if(level===1&&!bossLevel){
+    const dotW=16,gap=6,total=TOTAL_WAVES;
+    const startX=(W-total*(dotW+gap)+gap)/2;
+    for(let i=0;i<total;i++){
+      const done=i<waveNumber-1||(i===waveNumber-1&&waveState==='clearing');
+      const curr=i===waveNumber-1&&waveState==='active';
+      ctx.beginPath();
+      if(curr){ctx.arc(startX+i*(dotW+gap)+dotW/2,H-10,dotW/2,0,Math.PI*2);ctx.fillStyle='#ff0';ctx.shadowColor='#ff0';ctx.shadowBlur=10;}
+      else{ctx.rect(startX+i*(dotW+gap),H-16,dotW,6);ctx.fillStyle=done?'#0f8':'#222';}
+      ctx.fill();ctx.shadowBlur=0;
+    }
+    ctx.font='9px Courier New';ctx.textAlign='center';ctx.fillStyle='#0ff6';
+    ctx.fillText('WAVE',W/2,H-22);
+  }
 }
 
 function gameLoop(){update();render();animId=requestAnimationFrame(gameLoop);}
@@ -1707,6 +1816,7 @@ function gameLoop(){update();render();animId=requestAnimationFrame(gameLoop);}
 function startGame(){
   ensureAudio();
   score=0;level=1;frameCount=0;bossLevel=false;enemiesSpawned=0;enemiesForBoss=18;
+  waveNumber=0;waveState='idle';waveTimer=90;
   combo=0;comboTimer=0;comboWrap.style.display='none';
   parts=[];bullets=[];enemyBullets=[];enemies=[];powerups=[];msgs=[];
   plasmas=[];lightnings=[];railgunBeams=[];laserBeam=null;
