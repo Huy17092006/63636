@@ -1434,7 +1434,7 @@ function updateEnemies(){
 //  BOSS
 // ══════════════════════════════════════════════════
 function spawnBoss(){
-  boss={x:W/2,y:-100,vx:2,vy:0,w:110,h:85,hp:120+level*30,maxHp:120+level*30,pattern:0,ptTimer:0,shootCd:60,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0,burstActive:false,burstTimer:0,burstCd:0};
+  boss={x:W/2,y:-100,vx:2,vy:0,w:110,h:85,hp:300+level*50,maxHp:300+level*50,pattern:0,ptTimer:0,shootCd:60,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0,burstActive:false,burstTimer:0,burstCd:0};
   bossBarEl.style.display='block';
 }
 function drawBoss(){
@@ -1663,7 +1663,7 @@ function update(){
 
   // normal shoot
   P.shootCd=Math.max(0,P.shootCd-1);
-  if((keys[' ']||keys['Space'])&&P.shootCd<=0){shootPlayer();P.shootCd=Math.max(6,P.shootRate-level);}
+  if((keys[' ']||keys['Space'])&&P.shootCd<=0){shootPlayer();P.shootCd=6;}
 
   // heavy weapons
   if(just('1'))firePlasma();
