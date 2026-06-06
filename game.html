@@ -9,6 +9,8 @@
   body{background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace}
   #wrap{position:relative;width:480px;height:700px}
   canvas{display:block;border:2px solid #0ff;box-shadow:0 0 30px #0ff4,0 0 60px #0ff2}
+
+  /* ── In-game HUD ── */
   #ui{position:absolute;top:0;left:0;right:0;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;color:#0ff;font-size:12px;font-weight:bold;text-shadow:0 0 8px #0ff}
   #hpRow{display:flex;gap:2px;align-items:center}
   #scoreBox{font-size:14px;letter-spacing:2px}
@@ -22,25 +24,44 @@
   #bossLabel{color:#f0a;font-size:11px;font-weight:bold;text-shadow:0 0 8px #f0a;margin-bottom:3px;text-align:center;letter-spacing:2px}
   #bossBg{height:7px;background:#333;border-radius:4px;overflow:hidden;border:1px solid #f0a4}
   #bossFill{height:100%;background:linear-gradient(90deg,#f00,#f0a);border-radius:4px;box-shadow:0 0 8px #f0a;transition:width .08s}
-  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-align:center;background:rgba(0,0,0,.88)}
-  #overlay h1{font-size:36px;letter-spacing:3px;color:#0ff;text-shadow:0 0 20px #0ff,0 0 40px #0ff;margin-bottom:4px;animation:pulse 1.5s ease-in-out infinite}
-  .sub{font-size:12px;color:#555;margin-bottom:18px;letter-spacing:2px}
-  .info{font-size:11px;color:#aaa;line-height:2;margin-bottom:18px;border:1px solid #333;padding:12px 20px;border-radius:8px;background:rgba(0,255,255,.04);max-width:340px}
-  .info span{color:#0ff} .info .nw{color:#f80} .info .ww{color:#f0a}
-  .btn{background:transparent;border:2px solid #0ff;color:#0ff;font-size:16px;font-family:'Courier New',monospace;letter-spacing:3px;padding:10px 32px;cursor:pointer;text-shadow:0 0 8px #0ff;box-shadow:0 0 20px #0ff4;transition:all .2s;animation:pulse 1.5s ease-in-out infinite;margin-top:4px}
-  .btn:hover{background:#0ff2;box-shadow:0 0 40px #0ff8;transform:scale(1.05)}
-  #hiBox{font-size:12px;color:#666;margin-bottom:6px}
-  #hiBox span{color:#ff0}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+  /* ── Screens (drawn on canvas; no DOM overlay needed during play) ── */
+  #screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+
+  /* ── Name input modal ── */
+  #nameModal{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.9);
+    z-index:10;
+  }
+  #nameModal h2{font-size:22px;color:#ff0;text-shadow:0 0 12px #ff0;margin-bottom:6px;letter-spacing:3px}
+  #nameModal p{font-size:12px;color:#aaa;margin-bottom:16px}
+  #nameInput{
+    background:transparent;border:2px solid #0ff;color:#0ff;
+    font-size:22px;font-family:'Courier New',monospace;letter-spacing:4px;
+    padding:8px 16px;text-align:center;width:180px;outline:none;
+    text-shadow:0 0 8px #0ff;box-shadow:0 0 16px #0ff4;
+  }
+  #nameSave{
+    margin-top:14px;background:transparent;border:2px solid #0ff;color:#0ff;
+    font-size:15px;font-family:'Courier New',monospace;letter-spacing:3px;
+    padding:8px 28px;cursor:pointer;text-shadow:0 0 8px #0ff;
+    box-shadow:0 0 16px #0ff4;transition:all .2s;pointer-events:all;
+  }
+  #nameSave:hover{background:#0ff2;box-shadow:0 0 32px #0ff8}
+
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @keyframes slideIn{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
 </style>
 </head>
 <body>
 <div id="wrap">
   <canvas id="c" width="480" height="700"></canvas>
-  <div id="ui">
+  <!-- in-game HUD (hidden during menus) -->
+  <div id="ui" style="display:none">
     <div id="hpRow"></div>
     <div id="lvlBox">LEVEL 1</div>
-    <div id="scoreBox">SCORE: 0</div>
+    <div id="scoreBox">0</div>
   </div>
   <div id="wepBox"></div>
   <div id="comboWrap">
@@ -51,22 +72,12 @@
     <div id="bossLabel">⚠ BOSS ⚠</div>
     <div id="bossBg"><div id="bossFill" style="width:100%"></div></div>
   </div>
-  <div id="overlay">
-    <h1>SPACE BLASTER</h1>
-    <div class="sub">— HEAVY ARMS EDITION —</div>
-    <div class="info">
-      <span>WASD / ↑←↓→</span> — Di chuyển<br>
-      <span>SPACE</span> — Bắn (cấp hiện tại)<br>
-      <span>E</span> — Tên lửa tự dẫn | <span>Q</span> — Bom<br>
-      <span>SHIFT</span> — Dash né<br>
-      <span class="nw">R</span> — Railgun xuyên giáp<br>
-      <span class="ww">1</span> — Plasma Ball &nbsp;
-      <span class="ww">2</span> — Lightning<br>
-      <span class="ww">3</span> — Shotgun &nbsp;&nbsp;
-      <span class="ww">4</span> — Laser Beam
-    </div>
-    <div id="hiBox">KỶ LỤC: <span id="hiVal">0</span></div>
-    <button class="btn" id="startBtn">[ BẮT ĐẦU ]</button>
+  <!-- name input modal -->
+  <div id="nameModal">
+    <h2>🏆 KỶ LỤC MỚI!</h2>
+    <p>Nhập tên của bạn (tối đa 6 ký tự)</p>
+    <input id="nameInput" maxlength="6" placeholder="AAA" autocomplete="off" spellcheck="false"/>
+    <button id="nameSave">[ LƯU ]</button>
   </div>
 </div>
 <script>
@@ -82,15 +93,265 @@ let hiScore=+localStorage.getItem('sb_hi')||0;
 hiValEl.textContent=hiScore.toLocaleString();
 
 // ── State ──────────────────────────────────────────
-const GS={MENU:0,PLAYING:1,GAMEOVER:2};
+const GS={MENU:0,PLAYING:1,GAMEOVER:2,LEADERBOARD:3,HOWTOPLAY:4,PAUSED:5};
 let state=GS.MENU, score=0, level=1, frameCount=0, animId;
+let menuCursor=0; // 0=start,1=leaderboard,2=howto
+let menuFrame=0;
+
+// ── Leaderboard ─────────────────────────────────────
+const LB_KEY='sb_scores_v2';
+function getScores(){try{return JSON.parse(localStorage.getItem(LB_KEY))||[];}catch{return[];}}
+function saveScore(name,sc,lv){
+  const list=getScores();
+  list.push({name:name.toUpperCase().slice(0,6)||'???',score:sc,level:lv,
+    date:new Date().toLocaleDateString('vi-VN')});
+  list.sort((a,b)=>b.score-a.score);
+  list.splice(5);
+  localStorage.setItem(LB_KEY,JSON.stringify(list));
+}
+function isNewRecord(sc){const s=getScores();return s.length<5||sc>s[s.length-1].score||s.some(e=>e.score<sc);}
+let hiScore=getScores()[0]?.score||0;
 
 // ── Keys ───────────────────────────────────────────
 const keys={},_prev={};
-addEventListener('keydown',e=>{keys[e.key]=true;if(' ArrowUp ArrowDown'.includes(e.key))e.preventDefault();});
+addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(' ArrowUp ArrowDown'.includes(e.key))e.preventDefault();
+  handleMenuKey(e.key);
+});
 addEventListener('keyup',e=>{keys[e.key]=false;});
 const just=k=>keys[k]&&!_prev[k];
 function snapPrev(){Object.assign(_prev,keys);}
+
+// ── Menu keyboard navigation ────────────────────────
+const MENU_ITEMS=3;
+function handleMenuKey(k){
+  if(state===GS.MENU){
+    if(k==='ArrowDown'||k==='s'||k==='S'){menuCursor=(menuCursor+1)%MENU_ITEMS;}
+    if(k==='ArrowUp'  ||k==='w'||k==='W'){menuCursor=(menuCursor+MENU_ITEMS-1)%MENU_ITEMS;}
+    if(k==='Enter'||k===' '){
+      if(menuCursor===0)startGame();
+      else if(menuCursor===1){state=GS.LEADERBOARD;cancelAnimationFrame(animId);menuLoop();}
+      else if(menuCursor===2){state=GS.HOWTOPLAY;cancelAnimationFrame(animId);menuLoop();}
+    }
+  }
+  if(state===GS.LEADERBOARD||state===GS.HOWTOPLAY){
+    if(k==='Escape'||k==='Backspace'){state=GS.MENU;cancelAnimationFrame(animId);menuLoop();}
+  }
+  if(state===GS.PLAYING){
+    if(k==='Escape'||k==='p'||k==='P'){
+      state=GS.PAUSED;
+      cancelAnimationFrame(animId);
+      drawPauseScreen();
+    }
+  }
+  if(state===GS.PAUSED){
+    if(k==='Escape'||k==='p'||k==='P'){resumeGame();}
+    if(k==='m'||k==='M'){state=GS.MENU;cancelAnimationFrame(animId);menuLoop();}
+  }
+  if(state===GS.GAMEOVER){
+    if(k==='Enter'||k===' ')startGame();
+    if(k==='Escape'||k==='m'||k==='M'){state=GS.MENU;menuLoop();}
+  }
+}
+function resumeGame(){state=GS.PLAYING;gameLoop();}
+
+// ── Canvas menu drawing helpers ─────────────────────
+function menuText(txt,x,y,size,col,align='center',glow=true){
+  ctx.font=`bold ${size}px 'Courier New'`;
+  ctx.textAlign=align; ctx.textBaseline='middle';
+  if(glow){ctx.shadowColor=col;ctx.shadowBlur=16;}
+  ctx.fillStyle=col; ctx.fillText(txt,x,y);
+  ctx.shadowBlur=0;
+}
+function menuRect(x,y,w,h,col,fill=false){
+  ctx.beginPath();ctx.roundRect(x,y,w,h,6);
+  if(fill){ctx.fillStyle=col+'22';ctx.fill();}
+  ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+}
+// scanline effect
+function drawScanlines(alpha=0.04){
+  ctx.fillStyle=`rgba(0,0,0,${alpha})`;
+  for(let y=0;y<H;y+=3){ctx.fillRect(0,y,W,1);}
+}
+// animated title gradient
+function drawTitle(y){
+  const t=menuFrame*.025;
+  const hue=180+Math.sin(t)*30;
+  ctx.font="bold 44px 'Courier New'";
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const grd=ctx.createLinearGradient(W/2-120,y,W/2+120,y);
+  grd.addColorStop(0,`hsl(${hue},100%,70%)`);
+  grd.addColorStop(.5,`hsl(${hue+40},100%,90%)`);
+  grd.addColorStop(1,`hsl(${hue},100%,70%)`);
+  ctx.shadowColor='#0ff';ctx.shadowBlur=25;
+  ctx.fillStyle=grd; ctx.fillText('SPACE BLASTER',W/2,y);
+  ctx.shadowBlur=0;
+  ctx.font="11px 'Courier New'"; ctx.fillStyle='#446';
+  ctx.fillText('— HEAVY ARMS EDITION —',W/2,y+32);
+}
+
+// ── MAIN MENU (drawn on canvas) ─────────────────────
+const MITEM_LABELS=['[ BẮT ĐẦU ]','[ BẢNG XẾP HẠNG ]','[ HƯỚNG DẪN ]'];
+const MITEM_COLS  =['#0ff','#ff0','#f0a'];
+
+function drawMainMenu(){
+  ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);
+  drawBG(); drawScanlines();
+  // title
+  drawTitle(170);
+  // best score
+  const best=getScores()[0];
+  menuText(best?`KỶ LỤC: ${best.name} — ${best.score.toLocaleString()}`:'CHƯA CÓ KỶ LỤC',W/2,220,11,'#556');
+  // menu items
+  const startY=300, gap=58;
+  MITEM_LABELS.forEach((label,i)=>{
+    const selected=menuCursor===i;
+    const yy=startY+i*gap;
+    const col=MITEM_COLS[i];
+    if(selected){
+      menuRect(W/2-100,yy-20,200,40,col,true);
+      // pulsing glow
+      ctx.shadowColor=col; ctx.shadowBlur=20+Math.sin(menuFrame*.12)*8;
+    }
+    menuText(label,W/2,yy,selected?16:14,selected?col:col+'88');
+    ctx.shadowBlur=0;
+    // cursor arrow
+    if(selected){
+      menuText('►',W/2-115,yy,12,col);
+      menuText('◄',W/2+115,yy,12,col);
+    }
+  });
+  // bottom hint
+  menuText('↑↓ CHỌN  •  ENTER XÁC NHẬN  •  P TẠM DỪNG',W/2,650,9,'#334');
+  // decorative corner lines
+  const c='#0ff3';
+  [[0,0,60,0],[0,0,0,60],[W,0,W-60,0],[W,0,W,60],
+   [0,H,60,H],[0,H,0,H-60],[W,H,W-60,H],[W,H,W,H-60]].forEach(([x1,y1,x2,y2])=>{
+    ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  });
+}
+
+// ── LEADERBOARD screen ──────────────────────────────
+const RANK_MEDALS=['🥇','🥈','🥉','④','⑤'];
+const RANK_COLS  =['#ff0','#aaa','#c84','#88f','#8ff'];
+function drawLeaderboard(){
+  ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);
+  drawBG(); drawScanlines();
+  // header
+  menuRect(W/2-140,30,280,40,'#ff0',true);
+  menuText('🏆 BẢNG XẾP HẠNG 🏆',W/2,52,16,'#ff0');
+  // table header
+  menuText('HẠNG',70,110,11,'#555');
+  menuText('TÊN',190,110,11,'#555');
+  menuText('ĐIỂM',310,110,11,'#555');
+  menuText('LV',410,110,11,'#555');
+  ctx.strokeStyle='#333';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,120);ctx.lineTo(450,120);ctx.stroke();
+  // rows
+  const scores=getScores();
+  if(scores.length===0){
+    menuText('CHƯA CÓ DỮ LIỆU',W/2,340,14,'#444');
+    menuText('HÃY CHƠI VÀ ĐẶT KỶ LỤC!',W/2,370,12,'#333');
+  } else {
+    scores.forEach((s,i)=>{
+      const yy=155+i*62;
+      const col=RANK_COLS[i];
+      const isTop=(i===0);
+      // row bg
+      menuRect(30,yy-20,420,44,col,true);
+      if(isTop){ctx.shadowColor=col;ctx.shadowBlur=12;}
+      menuText(RANK_MEDALS[i],70,yy,isTop?20:16,col,false,isTop);
+      menuText(s.name||'???',190,yy,isTop?18:15,col,'center',isTop);
+      menuText(s.score.toLocaleString(),310,yy,isTop?16:13,col,'center',isTop);
+      menuText(`${s.level}`,410,yy,isTop?16:13,col,'center',isTop);
+      ctx.shadowBlur=0;
+      if(s.date){menuText(s.date,240,yy+16,9,'#334');}
+    });
+  }
+  // back hint
+  menuRect(W/2-90,640,180,36,'#f0a',true);
+  menuText('[ ESC ] QUAY LẠI',W/2,660,13,'#f0a');
+}
+
+// ── HOW TO PLAY screen ──────────────────────────────
+function drawHowToPlay(){
+  ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);
+  drawBG(); drawScanlines();
+  menuRect(W/2-130,22,260,36,'#0ff',true);
+  menuText('HƯỚNG DẪN',W/2,42,16,'#0ff');
+
+  const col1='#0ff', col2='#f80', col3='#f0a', col4='#ff0';
+  const rows=[
+    [col1,'DI CHUYỂN',  'WASD  /  ↑←↓→'],
+    [col1,'BẮN ĐẠN',    'SPACE'],
+    [col1,'TÊN LỬA',    'E (tự dẫn đường)'],
+    [col1,'BOM HỦY DIỆT','Q (xóa màn)'],
+    [col1,'DASH NÉ',    'SHIFT'],
+    [col2,'RAILGUN',    'R — xuyên giáp 20 dmg'],
+    [col3,'PLASMA BALL','1 — nổ tiếp xúc 10 dmg'],
+    [col3,'SẤM SÉT',    '2 — dây chuyền 3 kẻ địch'],
+    [col3,'SHOTGUN',    '3 — 9 viên toé rộng'],
+    [col3,'LASER BEAM', '4 — giữ phím liên tục'],
+    [col4,'TẠM DỪNG',   'P hoặc ESC'],
+    [col4,'QUAY MENU',  'M (khi game over)'],
+  ];
+  rows.forEach(([c,key,desc],i)=>{
+    const yy=105+i*46;
+    ctx.font=`bold 12px 'Courier New'`; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.shadowColor=c; ctx.shadowBlur=6;
+    ctx.fillStyle=c;  ctx.fillText(key,42,yy);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#667'; ctx.font=`11px 'Courier New'`;
+    ctx.fillText('— '+desc,162,yy);
+  });
+  menuRect(W/2-90,655,180,34,'#f0a',true);
+  menuText('[ ESC ] QUAY LẠI',W/2,674,13,'#f0a');
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+
+// ── PAUSE screen ────────────────────────────────────
+function drawPauseScreen(){
+  ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);
+  menuRect(W/2-120,220,240,50,'#ff0',true);
+  menuText('⏸ TẠM DỪNG',W/2,247,22,'#ff0');
+  menuText('[P / ESC] TIẾP TỤC',W/2,330,14,'#0ff');
+  menuText('[M] VỀ MENU CHÍNH',W/2,370,14,'#f0a');
+}
+
+// ── GAME OVER screen ────────────────────────────────
+function drawGameOver(){
+  ctx.fillStyle='rgba(0,0,0,.88)';ctx.fillRect(0,0,W,H);
+  // title
+  ctx.font="bold 48px 'Courier New'"; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='#f00'; ctx.shadowBlur=30;
+  ctx.fillStyle='#f00'; ctx.fillText('GAME OVER',W/2,140);
+  ctx.shadowBlur=0;
+  // score
+  menuText(`ĐIỂM: ${score.toLocaleString()}`,W/2,210,22,'#ff0');
+  menuText(`LEVEL ĐẠT ĐƯỢC: ${level}`,W/2,248,14,'#888');
+  // rank in leaderboard
+  const scores=getScores();
+  const rank=scores.findIndex(s=>s.score===score&&s.level===level)+1;
+  if(rank>0){
+    menuText(`${RANK_MEDALS[rank-1]} HẠNG ${rank} TOÀN QUỐC`,W/2,285,15,RANK_COLS[rank-1]);
+  }
+  // leaderboard preview (top 3)
+  menuRect(W/2-130,305,260,6,'#333',true);
+  menuText('TOP 3',W/2,322,11,'#444');
+  scores.slice(0,3).forEach((s,i)=>{
+    const yy=346+i*30;
+    menuText(`${RANK_MEDALS[i]} ${s.name}`,W/2-30,yy,12,RANK_COLS[i],'right');
+    menuText(s.score.toLocaleString(),W/2+30,yy,12,RANK_COLS[i],'left');
+  });
+  // buttons
+  const btnY=490;
+  menuRect(W/2-80,btnY-18,160,36,'#0ff',true);
+  ctx.shadowColor='#0ff'; ctx.shadowBlur=10+Math.sin(menuFrame*.12)*5;
+  menuText('ENTER — CHƠI LẠI',W/2,btnY,13,'#0ff');
+  ctx.shadowBlur=0;
+  menuRect(W/2-70,btnY+38,140,32,'#f0a',true);
+  menuText('M — VỀ MENU',W/2,btnY+56,12,'#f0a');
+}
 
 // ── Audio ──────────────────────────────────────────
 let aCtx;
@@ -1461,27 +1722,60 @@ function startGame(){
   Object.assign(WEAPONS.laserW,   {ammo:6,cd:0});
   railgunCd=0;
   enemySpawnTimer=80;formationTimer=200;
-  overlay.style.display='none';state=GS.PLAYING;
+  $('ui').style.display='flex';
+  state=GS.PLAYING;
   updateHUD();updateWepHUD();
   if(animId)cancelAnimationFrame(animId);
   gameLoop();
 }
-function endGame(){
-  state=GS.GAMEOVER;cancelAnimationFrame(animId);
-  if(score>hiScore){hiScore=score;localStorage.setItem('sb_hi',hiScore);}
-  overlay.style.display='flex';
-  overlay.innerHTML=`
-    <div style="font-size:42px;color:#f00;text-shadow:0 0 20px #f00,0 0 40px #f00;margin-bottom:8px">GAME OVER</div>
-    <div style="font-size:18px;color:#ff0;text-shadow:0 0 10px #ff0;margin-bottom:6px;letter-spacing:2px">ĐIỂM: ${score.toLocaleString()}</div>
-    <div style="font-size:12px;color:#888;margin-bottom:4px">LEVEL: ${level}</div>
-    ${score>=hiScore?'<div style="font-size:12px;color:#0f4;text-shadow:0 0 8px #0f4;margin-bottom:14px">🏆 KỶ LỤC MỚI!</div>':'<div style="font-size:12px;color:#555;margin-bottom:14px">KỶ LỤC: '+hiScore.toLocaleString()+'</div>'}
-    <button class="btn" onclick="startGame()">[ CHƠI LẠI ]</button>
-  `;
-}
-$('startBtn').addEventListener('click',startGame);
 
-// idle menu loop
-(function menuLoop(){if(state!==GS.MENU)return;ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);drawBG();requestAnimationFrame(menuLoop);})();
+function endGame(){
+  state=GS.GAMEOVER;
+  cancelAnimationFrame(animId);
+  $('ui').style.display='none';
+  sfx.die();
+  // check if new record → ask name
+  if(isNewRecord(score)){
+    const modal=$('nameModal');
+    modal.style.display='flex';
+    const input=$('nameInput');
+    input.value='';
+    input.focus();
+    const save=()=>{
+      const name=input.value.trim()||'???';
+      saveScore(name,score,level);
+      hiScore=getScores()[0]?.score||0;
+      modal.style.display='none';
+      gameOverLoop();
+    };
+    $('nameSave').onclick=save;
+    input.onkeydown=e=>{if(e.key==='Enter')save();};
+  } else {
+    saveScore('???',score,level); // still save even without record
+    gameOverLoop();
+  }
+}
+
+function gameOverLoop(){
+  if(state!==GS.GAMEOVER)return;
+  menuFrame++;
+  ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);
+  drawBG();drawScanlines();
+  drawGameOver();
+  animId=requestAnimationFrame(gameOverLoop);
+}
+
+function menuLoop(){
+  const inMenu=state===GS.MENU||state===GS.LEADERBOARD||state===GS.HOWTOPLAY;
+  if(!inMenu)return;
+  menuFrame++;
+  ctx.fillStyle='#020210';ctx.fillRect(0,0,W,H);
+  if(state===GS.MENU)             drawMainMenu();
+  else if(state===GS.LEADERBOARD) drawLeaderboard();
+  else if(state===GS.HOWTOPLAY)   drawHowToPlay();
+  animId=requestAnimationFrame(menuLoop);
+}
+menuLoop();
 </script>
 </body>
 </html>
