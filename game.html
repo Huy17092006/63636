@@ -176,7 +176,7 @@ let railgunCd=0,railgunMaxCd=120;
 
 // ── Player ─────────────────────────────────────────
 const P={
-  x:W/2,y:H-110,w:36,h:48,speed:5,
+  x:W/2,y:H-110,w:52,h:44,speed:5,
   hp:3,maxHp:3,missiles:3,maxMissiles:3,bombs:2,maxBombs:2,
   shootCd:0,shootRate:10,invincible:0,
   shield:false,shieldTimer:0,
@@ -187,21 +187,167 @@ const P={
 
 function drawPlayer(){
   if(P.invincible>0&&Math.floor(frameCount/5)%2===0)return;
-  P.trail.push({x:P.x,y:P.y+P.h/2});if(P.trail.length>14)P.trail.shift();
-  P.trail.forEach((t,i)=>{const a=(i/P.trail.length)*.5,r=4*(i/P.trail.length);ctx.beginPath();ctx.arc(t.x,t.y+(P.trail.length-i)*1.8,r,0,Math.PI*2);ctx.fillStyle=`rgba(0,180,255,${a})`;ctx.fill();});
-  if(P.shield){ctx.beginPath();ctx.arc(P.x,P.y,34,0,Math.PI*2);ctx.strokeStyle=`rgba(0,255,255,${.3+Math.sin(frameCount*.15)*.25})`;ctx.lineWidth=3;ctx.stroke();ctx.globalAlpha=.08;ctx.fillStyle='#0ff';ctx.fill();ctx.globalAlpha=1;}
-  if(P.dashing){ctx.globalAlpha=.3;drawShip(P.x-P.dashVx*5,P.y-P.dashVy*5,'#0ff');ctx.globalAlpha=1;}
-  const col=P.powerLevel>0?'#ffe066':'#33bbff';
-  drawShip(P.x,P.y,col);
+  // dual afterburner trails (twin engine)
+  [-6,6].forEach(ox=>{
+    P.trail.push({x:P.x+ox,y:P.y+P.h/2-2});
+  });
+  if(P.trail.length>28)P.trail.splice(0,P.trail.length-28);
+  P.trail.forEach((t,i)=>{
+    const a=(i/P.trail.length)*.6,r=3.5*(i/P.trail.length);
+    const hue=P.powerLevel>0?45:200;
+    ctx.beginPath();ctx.arc(t.x,t.y+(P.trail.length-i)*.9,r,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${hue},100%,60%,${a})`;ctx.fill();
+  });
+  if(P.shield){
+    ctx.beginPath();ctx.arc(P.x,P.y,38,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(0,255,255,${.3+Math.sin(frameCount*.15)*.25})`;
+    ctx.lineWidth=3;ctx.stroke();ctx.globalAlpha=.07;ctx.fillStyle='#0ff';ctx.fill();ctx.globalAlpha=1;
+  }
+  if(P.dashing){ctx.globalAlpha=.25;drawF22(P.x-P.dashVx*5,P.y-P.dashVy*5,'#0ff');ctx.globalAlpha=1;}
+  const col=P.powerLevel>0?'#ffe066':'#88ccff';
+  drawF22(P.x,P.y,col);
 }
-function drawShip(x,y,col){
-  ctx.save();ctx.translate(x,y);ctx.shadowColor=col;ctx.shadowBlur=10;
-  ctx.beginPath();ctx.moveTo(-P.w/2,P.h/2);ctx.lineTo(-P.w*.65,P.h/4);ctx.lineTo(-P.w/4,0);ctx.lineTo(-P.w/4,-P.h/3);ctx.lineTo(-P.w/2,P.h/2);ctx.fillStyle=col+'88';ctx.fill();
-  ctx.beginPath();ctx.moveTo(P.w/2,P.h/2);ctx.lineTo(P.w*.65,P.h/4);ctx.lineTo(P.w/4,0);ctx.lineTo(P.w/4,-P.h/3);ctx.lineTo(P.w/2,P.h/2);ctx.fillStyle=col+'88';ctx.fill();
-  ctx.beginPath();ctx.moveTo(0,-P.h/2);ctx.lineTo(-P.w/3,P.h/4);ctx.lineTo(-P.w/6,P.h/3);ctx.lineTo(P.w/6,P.h/3);ctx.lineTo(P.w/3,P.h/4);ctx.closePath();ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
-  ctx.beginPath();ctx.ellipse(0,-P.h/7,P.w/8,P.h/6,0,0,Math.PI*2);ctx.fillStyle='rgba(0,255,255,.5)';ctx.fill();
+
+// ── F-22 Raptor top-down view ───────────────────────
+function drawF22(x,y,glowCol){
+  ctx.save();ctx.translate(x,y);
+  ctx.shadowColor=glowCol;ctx.shadowBlur=12;
+
+  // ── Colour palette ────
+  const hull1='#1e2d40';  // dark airframe
+  const hull2='#2a3f5a';  // mid panel
+  const hull3='#3a5578';  // lighter panel / chine
+  const edgeCol=glowCol+'55';
+
+  // ── DELTA WINGS ───────────────────────────────────
+  // left wing  (swept leading edge, shorter trailing edge)
+  ctx.beginPath();
+  ctx.moveTo( 0,-22);   // nose root
+  ctx.lineTo(-30, 8);   // left wingtip
+  ctx.lineTo(-16,20);   // left trailing edge
+  ctx.lineTo( -4,16);   // fuselage join
+  ctx.closePath();
+  ctx.fillStyle=hull1;ctx.fill();
+  ctx.strokeStyle=edgeCol;ctx.lineWidth=1;ctx.stroke();
+
+  // right wing
+  ctx.beginPath();
+  ctx.moveTo( 0,-22);
+  ctx.lineTo(30, 8);
+  ctx.lineTo(16,20);
+  ctx.lineTo( 4,16);
+  ctx.closePath();
+  ctx.fillStyle=hull1;ctx.fill();
+  ctx.strokeStyle=edgeCol;ctx.lineWidth=1;ctx.stroke();
+
+  // ── FUSELAGE ──────────────────────────────────────
+  ctx.beginPath();
+  ctx.moveTo( 0,-22);   // nose tip
+  ctx.lineTo(-5,-14);
+  ctx.lineTo(-6,  2);
+  ctx.lineTo(-5, 20);
+  ctx.lineTo( 5, 20);
+  ctx.lineTo( 6,  2);
+  ctx.lineTo( 5,-14);
+  ctx.closePath();
+  ctx.fillStyle=hull2;ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.stroke();
+
+  // ── CHINES (blended leading edges) ───────────────
+  ctx.beginPath();
+  ctx.moveTo(0,-22);ctx.lineTo(-5,-14);ctx.lineTo(-9,2);ctx.lineTo(-4,16);ctx.closePath();
+  ctx.fillStyle=hull3;ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0,-22);ctx.lineTo( 5,-14);ctx.lineTo( 9,2);ctx.lineTo( 4,16);ctx.closePath();
+  ctx.fillStyle=hull3;ctx.fill();
+
+  // ── TWIN CANTED VERTICAL STABILIZERS ─────────────
+  // left fin (canted outward ~25°)
+  ctx.save();ctx.translate(-9,10);ctx.rotate(-0.42);
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-4,-13);ctx.lineTo(-1,-13);ctx.lineTo(2,0);ctx.closePath();
+  ctx.fillStyle=hull1;ctx.strokeStyle=edgeCol;ctx.lineWidth=1;ctx.fill();ctx.stroke();
+  ctx.restore();
+
+  // right fin
+  ctx.save();ctx.translate(9,10);ctx.rotate(0.42);
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(4,-13);ctx.lineTo(1,-13);ctx.lineTo(-2,0);ctx.closePath();
+  ctx.fillStyle=hull1;ctx.strokeStyle=edgeCol;ctx.lineWidth=1;ctx.fill();ctx.stroke();
+  ctx.restore();
+
+  // ── ENGINE NOZZLES (serrated, rectangular) ────────
+  [-6,6].forEach(nx=>{
+    ctx.fillStyle='#111';
+    ctx.fillRect(nx-3.5,18,7,6);
+    ctx.strokeStyle='#555';ctx.lineWidth=.8;ctx.strokeRect(nx-3.5,18,7,6);
+    // afterburner flame
+    const flameH=6+Math.sin(frameCount*.25+nx)*3;
+    const fg=ctx.createLinearGradient(nx,24,nx,24+flameH);
+    fg.addColorStop(0,'rgba(255,200,60,0.95)');
+    fg.addColorStop(.5,'rgba(255,100,20,0.6)');
+    fg.addColorStop(1,'transparent');
+    ctx.fillStyle=fg;
+    ctx.fillRect(nx-3,24,6,flameH);
+  });
+
+  // ── INTAKE (DSI bump, just visual) ───────────────
+  [-4,4].forEach(ix=>{
+    ctx.beginPath();ctx.ellipse(ix,2,2.5,3,0,0,Math.PI*2);
+    ctx.fillStyle='#111';ctx.fill();
+    ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;ctx.stroke();
+  });
+
+  // ── CANOPY (bubble, teardrop) ──────────────────────
+  ctx.beginPath();
+  ctx.moveTo(0,-18);
+  ctx.bezierCurveTo(-4,-13,-4,-5,0,-1);
+  ctx.bezierCurveTo( 4,-5, 4,-13,0,-18);
+  ctx.fillStyle='rgba(80,200,255,0.55)';ctx.fill();
+  ctx.strokeStyle='rgba(160,240,255,0.9)';ctx.lineWidth=1;ctx.stroke();
+  // highlight streak
+  ctx.beginPath();ctx.moveTo(-1,-16);ctx.bezierCurveTo(-3,-12,-3,-7,-1,-3);
+  ctx.strokeStyle='rgba(255,255,255,0.45)';ctx.lineWidth=1;ctx.stroke();
+
+  // ── WEAPON GLOW OUTLINE (when powered up) ────────
+  if(P.powerLevel>0){
+    ctx.shadowColor=glowCol;ctx.shadowBlur=22;
+    ctx.strokeStyle=glowCol+'99';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(0,-22);ctx.lineTo(-30,8);ctx.lineTo(-16,20);ctx.lineTo(16,20);ctx.lineTo(30,8);ctx.closePath();
+    ctx.stroke();ctx.shadowBlur=0;
+  }
+
+  // ── WING MISSILE PODS ────────────────────────────
+  if(P.missiles>0){
+    [[-22,4],[22,4]].forEach(([mx,my])=>{
+      ctx.fillStyle='#c8c8d0';
+      ctx.beginPath();ctx.roundRect(mx-2,my-5,4,10,2);ctx.fill();
+      // red tip
+      ctx.fillStyle='#f44';ctx.beginPath();ctx.arc(mx,my-5,2,0,Math.PI*2);ctx.fill();
+    });
+  }
+
+  // ── US ROUNDEL (star in circle, on wings) ────────
+  [[-20,3],[20,3]].forEach(([rx,ry])=>{
+    ctx.save();ctx.translate(rx,ry);ctx.globalAlpha=.55;
+    // white circle
+    ctx.beginPath();ctx.arc(0,0,5.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    // blue center
+    ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fillStyle='#003fa0';ctx.fill();
+    // 5-point star
+    ctx.fillStyle='#fff';ctx.beginPath();
+    for(let i=0;i<5;i++){const a=(i*2*Math.PI/5)-Math.PI/2,b=a+Math.PI/5;
+      if(i===0)ctx.moveTo(Math.cos(a)*3.5,Math.sin(a)*3.5);
+      else ctx.lineTo(Math.cos(a)*3.5,Math.sin(a)*3.5);
+      ctx.lineTo(Math.cos(b)*1.4,Math.sin(b)*1.4);}
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+  });
+
   ctx.restore();ctx.shadowBlur=0;
 }
+
+// legacy alias kept for dash afterimage
+const drawShip=(x,y,col)=>drawF22(x,y,col);
 
 // ══════════════════════════════════════════════════
 //  BULLETS & HEAVY PROJECTILES
@@ -539,61 +685,278 @@ function spawnEnemy(){
   });
 }
 
+// ── Spinning propeller helper ──────────────────────
+// cx,cy = center; r = blade length; n = blades; spd = spin multiplier
+function drawProp(cx,cy,r,n,col,spd=1){
+  const angle=frameCount*0.4*spd;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(angle);
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2;
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(a)*r*.45, Math.sin(a)*r*.45, r*.48, r*.18, a, 0, Math.PI*2);
+    ctx.fillStyle=col+'cc';ctx.fill();
+  }
+  ctx.beginPath();ctx.arc(0,0,r*.22,0,Math.PI*2);
+  ctx.fillStyle='#bbb';ctx.fill();
+  ctx.strokeStyle='#666';ctx.lineWidth=.8;ctx.stroke();
+  ctx.restore();
+}
+
+// ── Radial engine ring ──────────────────────────────
+function drawRadialEngine(cx,cy,r,col){
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='#2a2a2a';ctx.fill();
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+  // cylinder studs
+  for(let i=0;i<9;i++){const a=(i/9)*Math.PI*2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*(r*.72),cy+Math.sin(a)*(r*.72),r*.15,0,Math.PI*2);ctx.fillStyle='#444';ctx.fill();}
+}
+
 function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
   const fl=e.flash>0;e.flash=Math.max(0,e.flash-1);
   ctx.shadowColor=e.col;ctx.shadowBlur=fl?22:7;
   const c=fl?'#fff':e.col;
+  // Enemies fly nose-down (nose at bottom, +y)
 
   switch(e.type){
-    case 'scout':
-      ctx.beginPath();ctx.moveTo(0,e.h/2);ctx.lineTo(-e.w/2,-e.h/2);ctx.lineTo(0,-e.h/4);ctx.lineTo(e.w/2,-e.h/2);ctx.closePath();ctx.fillStyle=c;ctx.fill();break;
-    case 'fighter':
-      ctx.beginPath();ctx.moveTo(0,e.h/2);ctx.lineTo(-e.w/2,e.h/4);ctx.lineTo(-e.w/3,-e.h/2);ctx.lineTo(0,-e.h/3);ctx.lineTo(e.w/3,-e.h/2);ctx.lineTo(e.w/2,e.h/4);ctx.closePath();ctx.fillStyle=c;ctx.fill();break;
-    case 'heavy':
-      ctx.beginPath();ctx.roundRect(-e.w/2,-e.h/2,e.w,e.h,8);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.stroke();
-      ctx.fillStyle=c;ctx.fillRect(-4,e.h/4,8,14);break;
-    case 'zigzag':
-      ctx.beginPath();ctx.moveTo(0,e.h/2);ctx.lineTo(-e.w/2,0);ctx.lineTo(-e.w/4,-e.h/2);ctx.lineTo(e.w/4,-e.h/2);ctx.lineTo(e.w/2,0);ctx.closePath();ctx.fillStyle=c;ctx.fill();break;
-    case 'kamikaze':
-      ctx.beginPath();ctx.moveTo(0,-e.h/2);ctx.lineTo(e.w/2,e.h/2);ctx.lineTo(0,e.h/4);ctx.lineTo(-e.w/2,e.h/2);ctx.closePath();ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();break;
 
-    // ── HEAVY ENEMY SHAPES ──────────────────────────
-    case 'mine_layer':
-      // flat cruiser with side pods
-      ctx.beginPath();ctx.roundRect(-e.w/2,-e.h/4,e.w,e.h/2,6);ctx.fillStyle=c;ctx.fill();
-      [-e.w*.45,e.w*.45].forEach(sx=>{ctx.beginPath();ctx.arc(sx,0,8,0,Math.PI*2);ctx.fillStyle=c+'cc';ctx.fill();});
-      ctx.strokeStyle='#fff4';ctx.lineWidth=2;ctx.stroke();break;
-
-    case 'laser_ship':
-      // slim aggressive cruiser
-      ctx.beginPath();ctx.moveTo(0,-e.h/2);ctx.lineTo(-e.w/2,e.h/4);ctx.lineTo(-e.w/4,e.h/2);ctx.lineTo(e.w/4,e.h/2);ctx.lineTo(e.w/2,e.h/4);ctx.closePath();ctx.fillStyle=c;ctx.fill();
-      // charging glow at front
-      if(e.chargeTimer>0){const g2=ctx.createRadialGradient(0,e.h/2,0,0,e.h/2,e.chargeTimer/2);g2.addColorStop(0,'rgba(255,80,80,.9)');g2.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(0,e.h/2,e.chargeTimer/2,0,Math.PI*2);ctx.fillStyle=g2;ctx.fill();}
+    // ── SCOUT — Single-engine fighter (Spitfire/Zero style) ──
+    case 'scout':{
+      const w=e.w,h=e.h;
+      // elliptical wings
+      ctx.beginPath();ctx.ellipse(0,0,w/2,h/5,0,0,Math.PI*2);
+      ctx.fillStyle=c+'cc';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1;ctx.stroke();
+      // fuselage (nose down)
+      ctx.beginPath();
+      ctx.moveTo(0,-h/2);        // tail top
+      ctx.lineTo(-4,-h/4);
+      ctx.lineTo(-3, h/4);
+      ctx.lineTo( 0, h/2+4);     // nose tip
+      ctx.lineTo( 3, h/4);
+      ctx.lineTo( 4,-h/4);
+      ctx.closePath();
+      ctx.fillStyle=c;ctx.fill();
+      // tail fin
+      ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo(-8,-h/2+4);ctx.lineTo(0,-h/3);ctx.closePath();
+      ctx.fillStyle=c+'aa';ctx.fill();
+      ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo( 8,-h/2+4);ctx.lineTo(0,-h/3);ctx.closePath();
+      ctx.fillStyle=c+'aa';ctx.fill();
+      // radial engine
+      drawRadialEngine(0,h/3,6,c);
+      // 2-blade prop below nose
+      drawProp(0,h/2+4,9,2,'#ccc',1.4);
       break;
+    }
 
-    case 'artillery':
-      // heavy battleship
-      ctx.beginPath();ctx.roundRect(-e.w/2,-e.h/2,e.w,e.h,10);ctx.fillStyle=c;ctx.fill();
-      // barrels
-      [-16,0,16].forEach(bx=>{ctx.fillStyle='#888';ctx.fillRect(bx-4,e.h/4,8,20);ctx.beginPath();ctx.arc(bx,e.h/2+20,6,0,Math.PI*2);ctx.fillStyle='#aaa';ctx.fill();});
-      ctx.strokeStyle='rgba(200,100,255,.5)';ctx.lineWidth=3;ctx.stroke();break;
-
-    case 'carrier':
-      // large carrier with hangar
-      ctx.beginPath();ctx.roundRect(-e.w/2,-e.h/2,e.w,e.h,12);ctx.fillStyle=c;ctx.fill();
-      ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-e.w/4,e.h/6,e.w/2,e.h/4); // hangar bay
-      ctx.strokeStyle='rgba(80,180,255,.6)';ctx.lineWidth=3;ctx.stroke();
-      // wing stripes
-      [-1,1].forEach(s=>{ctx.fillStyle='rgba(80,180,255,.3)';ctx.fillRect(s*e.w/4,-e.h/2,2,e.h);});
+    // ── FIGHTER — Twin-engine (P-38 Lightning style) ──
+    case 'fighter':{
+      const w=e.w,h=e.h;
+      // twin booms
+      [-w/3,w/3].forEach(bx=>{
+        ctx.beginPath();ctx.roundRect(bx-4,-h/2,8,h,4);
+        ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#fff3';ctx.lineWidth=1;ctx.stroke();
+        // boom engine
+        drawRadialEngine(bx,-h/4,5,c);
+        // 3-blade prop on each engine
+        drawProp(bx,h/2+3,8,3,'#ccc',1.2);
+        // boom tail fin
+        ctx.beginPath();ctx.moveTo(bx-5,-h/2);ctx.lineTo(bx,-h/2-6);ctx.lineTo(bx+5,-h/2);ctx.closePath();
+        ctx.fillStyle=c+'88';ctx.fill();
+      });
+      // central wing connecting both booms
+      ctx.beginPath();ctx.ellipse(0,0,w/2,h/6,0,0,Math.PI*2);
+      ctx.fillStyle=c+'99';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1;ctx.stroke();
+      // central gondola (pilot)
+      ctx.beginPath();ctx.roundRect(-5,-h/4,10,h/2,4);
+      ctx.fillStyle=c+'dd';ctx.fill();
+      // cockpit canopy
+      ctx.beginPath();ctx.ellipse(0,-h/4+4,3,5,0,0,Math.PI*2);
+      ctx.fillStyle='rgba(80,200,255,.6)';ctx.fill();
       break;
+    }
+
+    // ── HEAVY — Twin-engine bomber (B-25 style) ──
+    case 'heavy':{
+      const w=e.w,h=e.h;
+      // large swept wings
+      ctx.beginPath();
+      ctx.moveTo(0, h/4);
+      ctx.lineTo(-w/2,-h/6);ctx.lineTo(-w/2+4,-h/3);ctx.lineTo(-w/5,-h/3);
+      ctx.lineTo(0,-h/2);
+      ctx.lineTo( w/5,-h/3);ctx.lineTo( w/2-4,-h/3);ctx.lineTo( w/2,-h/6);
+      ctx.closePath();
+      ctx.fillStyle=c+'99';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.stroke();
+      // fat fuselage
+      ctx.beginPath();ctx.roundRect(-8,-h/2,16,h,6);ctx.fillStyle=c;ctx.fill();
+      ctx.strokeStyle='#fff4';ctx.lineWidth=1.5;ctx.stroke();
+      // 2 engines on wings
+      [-w/3,w/3].forEach(ex=>{
+        drawRadialEngine(ex,-h/8,7,c);
+        drawProp(ex,h/4+2,10,3,'#ddd',1.0);
+      });
+      // cockpit
+      ctx.beginPath();ctx.ellipse(0,-h/2+6,4,6,0,0,Math.PI*2);
+      ctx.fillStyle='rgba(80,200,255,.55)';ctx.fill();
+      // tail cross fins
+      ctx.fillStyle=c+'aa';
+      ctx.fillRect(-14,-h/2,6,4);ctx.fillRect( 8,-h/2,6,4);
+      break;
+    }
+
+    // ── ZIGZAG — Radial-engine agile ace ──
+    case 'zigzag':{
+      const w=e.w,h=e.h;
+      // round cranked wings (Corsair-style gull wing)
+      ctx.beginPath();
+      ctx.moveTo(0,4);
+      ctx.lineTo(-6,2);ctx.lineTo(-w/2,-2);ctx.lineTo(-w/2+2,-h/4);ctx.lineTo(-4,-h/4);
+      ctx.lineTo(0,-h/2);
+      ctx.lineTo(4,-h/4);ctx.lineTo(w/2-2,-h/4);ctx.lineTo(w/2,-2);ctx.lineTo(6,2);
+      ctx.closePath();
+      ctx.fillStyle=c+'bb';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1;ctx.stroke();
+      // short fuselage
+      ctx.beginPath();ctx.roundRect(-5,-h/2,10,h,4);ctx.fillStyle=c;ctx.fill();
+      // large radial engine
+      drawRadialEngine(0,h/4,8,c);
+      // fast 4-blade prop
+      drawProp(0,h/2+5,10,4,'#bbb',1.8);
+      // cockpit
+      ctx.beginPath();ctx.ellipse(0,-h/4,3,4,0,0,Math.PI*2);
+      ctx.fillStyle='rgba(80,200,255,.6)';ctx.fill();
+      break;
+    }
+
+    // ── KAMIKAZE — Japanese Zero dive bomber ──
+    case 'kamikaze':{
+      const w=e.w,h=e.h;
+      // round wings
+      ctx.beginPath();ctx.ellipse(0,-2,w/2,h/4,0,0,Math.PI*2);
+      ctx.fillStyle='#a00';ctx.fill();ctx.strokeStyle='#f44';ctx.lineWidth=1.5;ctx.stroke();
+      // fuselage
+      ctx.beginPath();ctx.roundRect(-4,-h/2,8,h,3);ctx.fillStyle='#c00';ctx.fill();
+      ctx.strokeStyle='#f88';ctx.lineWidth=1;ctx.stroke();
+      // rising sun on wings
+      ctx.beginPath();ctx.arc(0,-2,5,0,Math.PI*2);
+      ctx.fillStyle='#ff4';ctx.globalAlpha=.7;ctx.fill();ctx.globalAlpha=1;
+      // tail fin
+      ctx.fillStyle='#800';ctx.fillRect(-9,-h/2,5,5);ctx.fillRect( 4,-h/2,5,5);
+      // large 2-blade prop (spinning fast, fire-tinged)
+      drawProp(0,h/2+3,9,2,'#fa0',2.2);
+      // engine
+      drawRadialEngine(0,h/3,6,'#f44');
+      break;
+    }
+
+    // ── MINE LAYER — Twin-float plane (Catalina style) ──
+    case 'mine_layer':{
+      const w=e.w,h=e.h;
+      // high parasol wing
+      ctx.beginPath();ctx.ellipse(0,-h/8,w/2,h/5,0,0,Math.PI*2);
+      ctx.fillStyle=c+'bb';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.stroke();
+      // fat boat hull
+      ctx.beginPath();ctx.roundRect(-8,-h/2,16,h*.8,6);ctx.fillStyle=c;ctx.fill();
+      // twin floats
+      [-w*.35,w*.35].forEach(fx=>{
+        ctx.beginPath();ctx.roundRect(fx-4,h/4,8,h/3,4);
+        ctx.fillStyle=c+'99';ctx.fill();ctx.strokeStyle='#fff4';ctx.lineWidth=1;ctx.stroke();
+      });
+      // 2 engines on wing top
+      [-w/3,w/3].forEach(ex=>{
+        drawRadialEngine(ex,-h/8,6,c);
+        drawProp(ex,h/4+2,9,3,'#ccc',0.9);
+      });
+      // bomb bay doors (slightly open)
+      ctx.fillStyle='#111';ctx.fillRect(-6,h/4-2,5,8);ctx.fillRect( 1,h/4-2,5,8);
+      break;
+    }
+
+    // ── LASER SHIP — Experimental electric propeller ──
+    case 'laser_ship':{
+      const w=e.w,h=e.h;
+      // swept delta-prop wing
+      ctx.beginPath();
+      ctx.moveTo(0,h/2);
+      ctx.lineTo(-w/2,0);ctx.lineTo(-w/4,-h/2);
+      ctx.lineTo( w/4,-h/2);ctx.lineTo( w/2, 0);
+      ctx.closePath();
+      ctx.fillStyle=c+'99';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.stroke();
+      // slim fuselage
+      ctx.beginPath();ctx.roundRect(-5,-h/2,10,h,4);ctx.fillStyle=c;ctx.fill();
+      // electric engine glow
+      const eg=ctx.createRadialGradient(0,-h/4,0,0,-h/4,10);
+      eg.addColorStop(0,'rgba(255,80,80,.9)');eg.addColorStop(1,'transparent');
+      ctx.beginPath();ctx.arc(0,-h/4,10+Math.sin(frameCount*.2)*3,0,Math.PI*2);
+      ctx.fillStyle=eg;ctx.fill();
+      // energy propeller (glowing)
+      drawProp(0,h/2+4,10,4,'#f88',1.5);
+      // charging laser glow
+      if(e.chargeTimer>0){
+        const cg=ctx.createRadialGradient(0,h/2,0,0,h/2,e.chargeTimer*.5);
+        cg.addColorStop(0,'rgba(255,80,80,1)');cg.addColorStop(1,'transparent');
+        ctx.beginPath();ctx.arc(0,h/2,e.chargeTimer*.5,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+      }
+      break;
+    }
+
+    // ── ARTILLERY — 4-engine heavy bomber (B-17 style) ──
+    case 'artillery':{
+      const w=e.w,h=e.h;
+      // large straight wing
+      ctx.beginPath();
+      ctx.moveTo(-w/2,0);ctx.lineTo(-w/2+3,-h/5);ctx.lineTo(w/2-3,-h/5);ctx.lineTo(w/2,0);
+      ctx.lineTo(w/3,h/5);ctx.lineTo(-w/3,h/5);ctx.closePath();
+      ctx.fillStyle=c+'88';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.stroke();
+      // fat fuselage
+      ctx.beginPath();ctx.roundRect(-10,-h/2,20,h*.9,7);ctx.fillStyle=c;ctx.fill();
+      ctx.strokeStyle='#fff4';ctx.lineWidth=1.5;ctx.stroke();
+      // 4 engines (2 per wing)
+      [[-w*.38,-h*.05],[-w*.2,-h*.08],[w*.2,-h*.08],[w*.38,-h*.05]].forEach(([ex,ey])=>{
+        drawRadialEngine(ex,ey,6,c);
+        drawProp(ex,ey+h*.25,9,3,'#ccc',0.8);
+      });
+      // bomb bay doors
+      ctx.fillStyle='#111';ctx.fillRect(-7,h*.2,6,10);ctx.fillRect( 1,h*.2,6,10);
+      // tail guns
+      ctx.fillStyle='#888';ctx.fillRect(-3,-h/2,2,8);ctx.fillRect( 1,-h/2,2,8);
+      // cockpit greenhouse
+      ctx.beginPath();ctx.roundRect(-6,-h/2+2,12,12,3);
+      ctx.fillStyle='rgba(80,200,255,.5)';ctx.fill();
+      break;
+    }
+
+    // ── CARRIER — Super carrier aircraft (Spruce Goose style) ──
+    case 'carrier':{
+      const w=e.w,h=e.h;
+      // massive high wing
+      ctx.beginPath();ctx.ellipse(0,-h/6,w/2,h/4,0,0,Math.PI*2);
+      ctx.fillStyle=c+'77';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=2;ctx.stroke();
+      // huge boat fuselage
+      ctx.beginPath();ctx.roundRect(-12,-h/2,24,h*.85,8);ctx.fillStyle=c;ctx.fill();
+      ctx.strokeStyle='#fff3';ctx.lineWidth=2;ctx.stroke();
+      // 4 engines on wing top
+      [[-w*.38,-h/6],[-w*.18,-h/6],[w*.18,-h/6],[w*.38,-h/6]].forEach(([ex,ey])=>{
+        drawRadialEngine(ex,ey,7,c);
+        drawProp(ex,ey+h*.3,11,3,'#ccc',0.7);
+      });
+      // hangar bay opening
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(-8,h*.1,16,h*.25);
+      ctx.strokeStyle='rgba(80,180,255,.6)';ctx.lineWidth=2;ctx.strokeRect(-8,h*.1,16,h*.25);
+      // cockpit
+      ctx.beginPath();ctx.roundRect(-7,-h/2+2,14,14,4);
+      ctx.fillStyle='rgba(80,200,255,.5)';ctx.fill();
+      // wing struts
+      [-w*.25,w*.25].forEach(sx=>{ctx.fillStyle='#fff4';ctx.fillRect(sx-1.5,-h/6,3,h/4);});
+      break;
+    }
   }
+
   ctx.shadowBlur=0;
   // HP bar for heavy enemies
   if(e.maxHp>2&&e.hp<e.maxHp){
-    ctx.fillStyle='#333';ctx.fillRect(-e.w/2,e.h/2+6,e.w,4);
-    const hpCol=e.hp/e.maxHp>.5?'#0f0':e.hp/e.maxHp>.25?'#ff0':'#f44';
-    ctx.fillStyle=hpCol;ctx.fillRect(-e.w/2,e.h/2+6,e.w*(e.hp/e.maxHp),4);
+    const bY=e.h/2+(e.type==='scout'||e.type==='kamikaze'?16:10);
+    ctx.fillStyle='#222';ctx.fillRect(-e.w/2,bY,e.w,4);
+    ctx.fillStyle=e.hp/e.maxHp>.5?'#0f0':e.hp/e.maxHp>.25?'#ff0':'#f44';
+    ctx.fillRect(-e.w/2,bY,e.w*(e.hp/e.maxHp),4);
   }
   ctx.restore();
 }
