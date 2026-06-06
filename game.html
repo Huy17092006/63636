@@ -652,11 +652,11 @@ let enemies=[],enemySpawnTimer=0;
 let boss=null,bossLevel=false,enemiesSpawned=0,enemiesForBoss=18;
 
 const ET={
-  scout:    {w:30,h:28,hp:1, spd:2.2,score:100,col:'#f44', shootRate:0,   heavy:false},
-  fighter:  {w:36,h:34,hp:2, spd:1.5,score:200,col:'#f84', shootRate:110, heavy:false},
-  heavy:    {w:46,h:42,hp:6, spd:.8, score:400,col:'#f0a', shootRate:70,  heavy:false},
-  zigzag:   {w:28,h:26,hp:1, spd:2.5,score:150,col:'#aaf', shootRate:0,   heavy:false},
-  kamikaze: {w:24,h:22,hp:1, spd:0,  score:180,col:'#fa0', shootRate:0,   heavy:false},
+  scout:    {w:30,h:28,hp:1, spd:2.2,score:100,col:'#f44', shootRate:95,  heavy:false},
+  fighter:  {w:36,h:34,hp:2, spd:1.5,score:200,col:'#f84', shootRate:90,  heavy:false},
+  heavy:    {w:46,h:42,hp:6, spd:.8, score:400,col:'#f0a', shootRate:65,  heavy:false},
+  zigzag:   {w:28,h:26,hp:1, spd:2.5,score:150,col:'#aaf', shootRate:105, heavy:false},
+  kamikaze: {w:24,h:22,hp:1, spd:0,  score:300,col:'#fa0', shootRate:0,   heavy:false},
   // ── HEAVY ENEMY TYPES ──────────────────────────────
   mine_layer:{w:40,h:36,hp:3,spd:.6,score:350,col:'#f84',shootRate:0,heavy:true,mineCd:0,mineRate:80},
   laser_ship:{w:42,h:38,hp:4,spd:.7,score:450,col:'#f66',shootRate:0,heavy:true,laserCd:0,laserRate:120,chargeTimer:0},
@@ -676,7 +676,13 @@ function spawnEnemy(){
   let vx=0,vy=t.spd;
   if(type==='zigzag')vx=(Math.random()>.5?1:-1)*2.2;
   if(type==='fighter'||type==='heavy')vx=(Math.random()-.5)*.8;
-  if(type==='kamikaze'){const dx=P.x-x;const d=Math.hypot(dx,H)||1;const s=4+level*.4;vx=dx/d*s;vy=H/d*s;}
+  if(type==='kamikaze'){
+    const dx=P.x-x,d=Math.hypot(dx,H)||1,s=4+level*.4;
+    vx=dx/d*s;vy=H/d*s;
+    // BANZAI warning + scream sound
+    showMsg('⚠ BANZAI! ⚠','#f84',1400);
+    beep(800,.06,'square',.06,200); // warning beep
+  }
   enemies.push({...t,type,x,y:-60,vx,vy,hp:t.hp,maxHp:t.hp,shootCd:Math.random()*60,flash:0,
     mineCd:t.mineCd||0,mineRate:t.mineRate||99999,
     laserCd:t.laserCd||0,laserRate:t.laserRate||99999,chargeTimer:0,
@@ -826,24 +832,97 @@ function drawEnemy(e){
       break;
     }
 
-    // ── KAMIKAZE — Japanese Zero dive bomber ──
+    // ── KAMIKAZE — A6M Zero (authentic Japanese dive bomber) ──
     case 'kamikaze':{
-      const w=e.w,h=e.h;
-      // round wings
-      ctx.beginPath();ctx.ellipse(0,-2,w/2,h/4,0,0,Math.PI*2);
-      ctx.fillStyle='#a00';ctx.fill();ctx.strokeStyle='#f44';ctx.lineWidth=1.5;ctx.stroke();
-      // fuselage
-      ctx.beginPath();ctx.roundRect(-4,-h/2,8,h,3);ctx.fillStyle='#c00';ctx.fill();
-      ctx.strokeStyle='#f88';ctx.lineWidth=1;ctx.stroke();
-      // rising sun on wings
-      ctx.beginPath();ctx.arc(0,-2,5,0,Math.PI*2);
-      ctx.fillStyle='#ff4';ctx.globalAlpha=.7;ctx.fill();ctx.globalAlpha=1;
-      // tail fin
-      ctx.fillStyle='#800';ctx.fillRect(-9,-h/2,5,5);ctx.fillRect( 4,-h/2,5,5);
-      // large 2-blade prop (spinning fast, fire-tinged)
-      drawProp(0,h/2+3,9,2,'#fa0',2.2);
-      // engine
-      drawRadialEngine(0,h/3,6,'#f44');
+      const w=e.w*1.6, h=e.h*1.4; // larger, more imposing
+      const dist=Math.hypot(e.x-P.x, e.y-P.y);
+      const rage=Math.max(0,Math.min(1,(H-e.y)/H)); // 0=top, 1=near player
+
+      // ── fire glow halo (intensifies as it dives) ──
+      if(rage>0.3){
+        const haloR=20+rage*18;
+        const hg=ctx.createRadialGradient(0,0,0,0,0,haloR);
+        hg.addColorStop(0,`rgba(255,120,0,${rage*.5})`);
+        hg.addColorStop(1,'transparent');
+        ctx.beginPath();ctx.arc(0,0,haloR,0,Math.PI*2);
+        ctx.fillStyle=hg;ctx.fill();
+      }
+
+      // ── large elliptical wings (A6M Zero signature) ──
+      ctx.beginPath();ctx.ellipse(0,2,w/2,h/5,0,0,Math.PI*2);
+      ctx.fillStyle='#2d4a1e';ctx.fill();
+      ctx.strokeStyle=rage>.5?`rgba(255,${100-rage*100},0,${.6+rage*.4})`:'#5a7a3a';
+      ctx.lineWidth=1.5;ctx.stroke();
+
+      // ── hinomaru (red circle) on each wing ──
+      [-w*.3, w*.3].forEach(wx=>{
+        ctx.beginPath();ctx.arc(wx,2,5.5,0,Math.PI*2);
+        ctx.fillStyle='#cc0000';ctx.fill();
+        ctx.strokeStyle='#fff8';ctx.lineWidth=.8;ctx.stroke();
+      });
+
+      // ── main fuselage ──
+      ctx.beginPath();
+      ctx.moveTo(0, h/2+4);      // nose (pointing DOWN = toward player)
+      ctx.lineTo(-5, h/5);
+      ctx.lineTo(-5.5,-h/3);
+      ctx.lineTo(-3,-h/2);
+      ctx.lineTo( 3,-h/2);
+      ctx.lineTo( 5.5,-h/3);
+      ctx.lineTo( 5, h/5);
+      ctx.closePath();
+      // olive drab with damage coloring at high rage
+      const r=Math.floor(45+rage*80), g=Math.floor(74-rage*40), b=30;
+      ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();
+      ctx.strokeStyle='#ffffff22';ctx.lineWidth=1;ctx.stroke();
+
+      // ── single tail fin (vertical stabilizer) ──
+      ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo(-10,-h/2+2);ctx.lineTo(-3,-h/3);ctx.closePath();
+      ctx.fillStyle='#2d4a1e';ctx.fill();
+      ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo( 10,-h/2+2);ctx.lineTo( 3,-h/3);ctx.closePath();
+      ctx.fillStyle='#2d4a1e';ctx.fill();
+
+      // ── horizontal stabilizers ──
+      ctx.beginPath();ctx.ellipse(0,-h/2+4,10,4,0,0,Math.PI*2);
+      ctx.fillStyle='#2d4a1e';ctx.fill();
+
+      // ── radial engine (nose) ──
+      const engCol=rage>.5?`rgb(255,${Math.floor(100-rage*80)},0)`:'#8B4513';
+      drawRadialEngine(0, h/3+2, 7, engCol);
+
+      // ── propeller — 3-blade, speeds up when diving ──
+      const propSpd=1.5+rage*3.5;
+      drawProp(0, h/2+5, 11, 3, rage>.5?'#fa0':'#c8a060', propSpd);
+
+      // ── cockpit canopy ──
+      ctx.beginPath();
+      ctx.moveTo(-3.5,-h/4+2);ctx.bezierCurveTo(-4,-h/2+6,-4,-h/3+2,-3.5,-h/4+2);
+      ctx.moveTo( 3.5,-h/4+2);ctx.bezierCurveTo( 4,-h/2+6, 4,-h/3+2, 3.5,-h/4+2);
+      ctx.beginPath();
+      ctx.moveTo(0,-h/2+4);ctx.bezierCurveTo(-4,-h/3+2,-4,-h/4+4,0,-h/4+4);
+      ctx.bezierCurveTo( 4,-h/4+4, 4,-h/3+2, 0,-h/2+4);
+      ctx.fillStyle=`rgba(80,200,255,${.4+rage*.3})`;ctx.fill();
+      ctx.strokeStyle='#aaeeff';ctx.lineWidth=1;ctx.stroke();
+
+      // ── fire/smoke exhaust streaks (high rage) ──
+      if(rage>.4){
+        [-3,3].forEach(sx=>{
+          const fg=ctx.createLinearGradient(sx,-h/2,sx,-h/2-14*rage);
+          fg.addColorStop(0,`rgba(255,${Math.floor(150-rage*100)},0,${rage*.8})`);
+          fg.addColorStop(1,'transparent');
+          ctx.beginPath();ctx.moveTo(sx,-h/2);ctx.lineTo(sx+sx*.5,-h/2-14*rage);ctx.lineTo(sx-sx*.5,-h/2-14*rage);ctx.closePath();
+          ctx.fillStyle=fg;ctx.fill();
+        });
+      }
+
+      // ── warning flash when very close to player ──
+      if(dist<120){
+        ctx.globalAlpha=.15+Math.sin(frameCount*.4)*.1;
+        ctx.beginPath();ctx.arc(0,0,w/2+6,0,Math.PI*2);
+        ctx.fillStyle='#f00';ctx.fill();
+        ctx.globalAlpha=1;
+      }
+
       break;
     }
 
@@ -964,8 +1043,19 @@ function drawEnemy(e){
 // ── Enemy kill helper ───────────────────────────────
 function killEnemy(e){
   score+=Math.ceil(e.score*level*getMult());addCombo();updateHUD();
-  spawnParts(e.x,e.y,35,e.col,5);spawnParts(e.x,e.y,15,'#fff',3);
-  spawnPowerup(e.x,e.y);shake(e.heavy?6:3);
+  if(e.type==='kamikaze'){
+    // dramatic kamikaze explosion — larger, fire + smoke + shockwave
+    spawnParts(e.x,e.y,60,'#f80',7,.012);
+    spawnParts(e.x,e.y,40,'#f44',6,.015);
+    spawnParts(e.x,e.y,30,'#ff0',5,.018);
+    spawnParts(e.x,e.y,20,'#555',4,.02);
+    shake(10);beep(80,.5,'sawtooth',.12,300);
+    showMsg('KAMIKAZE DOWN!','#f80',900);
+  } else {
+    spawnParts(e.x,e.y,35,e.col,5);spawnParts(e.x,e.y,15,'#fff',3);
+    shake(e.heavy?6:3);
+  }
+  spawnPowerup(e.x,e.y);
   e.hp=0;
 }
 
@@ -975,20 +1065,64 @@ function updateEnemies(){
 
     if(e.type==='zigzag'){if(e.x<e.w/2||e.x>W-e.w/2)e.vx*=-1;}
     if(e.type==='kamikaze'){
-      const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1,ms=5+level*.3;
-      e.vx+=(dx/d)*.15;e.vy+=(dy/d)*.15;
-      const s=Math.hypot(e.vx,e.vy);if(s>ms){e.vx=e.vx/s*ms;e.vy=e.vy/s*ms;}
+      const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1;
+      // stronger steering + accelerate as it dives lower
+      const accel=0.25+Math.max(0,e.y/H)*0.3;
+      e.vx+=(dx/d)*accel; e.vy+=(dy/d)*accel;
+      const distToPlayer=d;
+      // max speed increases as it gets closer to player
+      const ms=5+level*.4+Math.max(0,(H-distToPlayer)/H)*6;
+      const spd=Math.hypot(e.vx,e.vy);
+      if(spd>ms){e.vx=e.vx/spd*ms;e.vy=e.vy/spd*ms;}
+      // fire + smoke trail
+      if(frameCount%3===0){
+        spawnParts(e.x,e.y-e.h*.5,3,'#f80',1.5,.08);
+        spawnParts(e.x,e.y-e.h*.5,2,'#444',1.2,.05);
+      }
+      // scream bullets when close (within 160px) — fires a burst at player
+      if(distToPlayer<160&&!e._screamed){
+        e._screamed=true;
+        for(let a=-15;a<=15;a+=15){
+          const rad=Math.atan2(dy,dx)+a*Math.PI/180;
+          enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(rad)*7,vy:Math.sin(rad)*7,r:5,col:'#f80'});
+        }
+        beep(1200,.08,'square',.05,400);
+      }
     }
     // bounce heavy enemies at screen sides
     if(e.heavy){if(e.x<e.w/2+5||e.x>W-e.w/2-5)e.vx*=-1;}
 
-    // ── Normal shooting ──────────────────────────────
-    if(e.shootRate>0&&!e.heavy){
-      e.shootCd--;if(e.shootCd<=0){
-        e.shootCd=e.shootRate+Math.random()*30;
-        const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1,spd=e.type==='heavy'?4.5:5.5;
-        enemyBullets.push({x:e.x,y:e.y+e.h/2,vx:dx/d*spd,vy:dy/d*spd,r:4,col:'#f84'});
-        if(e.type==='heavy'){[-15,15].forEach(off=>{const r=Math.atan2(dy,dx)+off*Math.PI/180;enemyBullets.push({x:e.x,y:e.y+e.h/2,vx:Math.cos(r)*spd,vy:Math.sin(r)*spd,r:4,col:'#f0a'});});}
+    // ── Normal shooting — ALL non-heavy types fire aimed at player ──
+    if(e.shootRate>0&&!e.heavy&&e.y>-20){
+      e.shootCd--;
+      if(e.shootCd<=0){
+        e.shootCd=Math.max(40,e.shootRate-level*4)+Math.random()*25;
+        const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1;
+        const spd=e.type==='heavy'?5:e.type==='fighter'?6:5.5;
+        const bc=e.type==='scout'?'#f55':e.type==='zigzag'?'#88f':e.type==='fighter'?'#f94':'#f84';
+        // primary aimed shot
+        enemyBullets.push({x:e.x,y:e.y+e.h/2,vx:dx/d*spd,vy:dy/d*spd,r:4,col:bc});
+        // fighter fires 3-shot burst
+        if(e.type==='fighter'){
+          [-12,12].forEach(off=>{
+            const r=Math.atan2(dy,dx)+off*Math.PI/180;
+            enemyBullets.push({x:e.x,y:e.y+e.h/2,vx:Math.cos(r)*spd,vy:Math.sin(r)*spd,r:3.5,col:'#f94'});
+          });
+        }
+        // heavy fires 3-way spread
+        if(e.type==='heavy'){
+          [-18,18].forEach(off=>{
+            const r=Math.atan2(dy,dx)+off*Math.PI/180;
+            enemyBullets.push({x:e.x,y:e.y+e.h/2,vx:Math.cos(r)*spd,vy:Math.sin(r)*spd,r:4.5,col:'#f0a'});
+          });
+        }
+        // zigzag fires left + right angled shots
+        if(e.type==='zigzag'){
+          [-25,25].forEach(off=>{
+            const r=Math.atan2(dy,dx)+off*Math.PI/180;
+            enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(r)*6,vy:Math.sin(r)*6,r:3.5,col:'#88f'});
+          });
+        }
       }
     }
 
@@ -1086,21 +1220,55 @@ function updateBoss(){
         b.x+=b.vx;if(b.x<b.w/2+10||b.x>W-b.w/2-10)b.vx*=-1;break;
     }
 
-    // ── Boss shooting ────────────────────────────────
+    // ── Boss shooting — focused on player + spread combos ──
     b.shootCd--;
     if(b.shootCd<=0){
-      const rate=b.enraged?10:20;
-      b.shootCd=Math.max(6,rate-level*2);
+      const rate=b.enraged?9:18;
+      b.shootCd=Math.max(5,rate-level*2);
       const hr=b.hp/b.maxHp;
+      // aimed vector toward player
+      const pdx=P.x-b.x, pdy=P.y-b.y, pd=Math.hypot(pdx,pdy)||1;
+      const aimed={vx:pdx/pd, vy:pdy/pd};
+
       if(hr>.7){
-        for(let a=-25;a<=25;a+=12.5){const r=(90+a)*Math.PI/180;enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*-7,vy:Math.sin(r)*-7,r:5,col:'#f0a'});}
+        // PHASE 1 — 3-cannon focused burst at player + small spread
+        [-35,0,35].forEach(cx=>{
+          enemyBullets.push({x:b.x+cx,y:b.y+b.h/2,vx:aimed.vx*8,vy:aimed.vy*8,r:5.5,col:'#f0a'});
+        });
+        // narrow spread around player direction
+        for(let a=-18;a<=18;a+=9){
+          const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
+          enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f84'});
+        }
       } else if(hr>.4){
-        for(let a=-45;a<=45;a+=15){const r=(90+a)*Math.PI/180;enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*-7,vy:Math.sin(r)*-7,r:5,col:'#f0a'});}
-        enemyBullets.push({x:b.x-b.w/2,y:b.y,vx:-6,vy:3,r:4,col:'#f84'});
-        enemyBullets.push({x:b.x+b.w/2,y:b.y,vx:6,vy:3,r:4,col:'#f84'});
+        // PHASE 2 — rapid triple focused burst + side shots
+        for(let i=0;i<3;i++){
+          setTimeout(()=>{
+            if(!boss)return;
+            enemyBullets.push({x:boss.x,y:boss.y+boss.h/2,vx:aimed.vx*(8+i),vy:aimed.vy*(8+i),r:6,col:'#f0a'});
+          }, i*80);
+        }
+        // wide spread
+        for(let a=-50;a<=50;a+=16.7){
+          const r=Math.atan2(pdy,pdx)+a*Math.PI/180;
+          enemyBullets.push({x:b.x,y:b.y+b.h/2,vx:Math.cos(r)*7,vy:Math.sin(r)*7,r:4,col:'#f44'});
+        }
+        // side suppression
+        enemyBullets.push({x:b.x-b.w/2,y:b.y,vx:-7,vy:aimed.vy*5,r:4,col:'#f84'});
+        enemyBullets.push({x:b.x+b.w/2,y:b.y,vx: 7,vy:aimed.vy*5,r:4,col:'#f84'});
       } else {
-        const n=b.enraged?18:12;
-        for(let i=0;i<n;i++){const r=(i/n)*Math.PI*2+b.ptTimer*.06,s=b.enraged?7:5;enemyBullets.push({x:b.x,y:b.y,vx:Math.cos(r)*s,vy:Math.sin(r)*s,r:5,col:'#f00'});}
+        // PHASE 3 ENRAGED — focused burst + full circle simultaneously
+        // Direct 5-shot aimed barrage
+        for(let i=0;i<5;i++){
+          const jitter=(Math.random()-.5)*0.15;
+          enemyBullets.push({x:b.x,y:b.y,vx:(aimed.vx+jitter)*(7+i*.5),vy:(aimed.vy+jitter)*(7+i*.5),r:5,col:'#f00'});
+        }
+        // 360 circle
+        const n=b.enraged?20:14;
+        for(let i=0;i<n;i++){
+          const r=(i/n)*Math.PI*2+b.ptTimer*.07, s=b.enraged?7:5.5;
+          enemyBullets.push({x:b.x,y:b.y,vx:Math.cos(r)*s,vy:Math.sin(r)*s,r:5,col:'#f00'});
+        }
       }
     }
 
