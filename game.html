@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Blaster — Heavy Arms Edition</title>
+<title>Thế Chiến Ảo</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace}
@@ -182,10 +182,10 @@ function drawTitle(y){
   grd.addColorStop(.5,`hsl(${hue+40},100%,90%)`);
   grd.addColorStop(1,`hsl(${hue},100%,70%)`);
   ctx.shadowColor='#0ff';ctx.shadowBlur=25;
-  ctx.fillStyle=grd; ctx.fillText('SPACE BLASTER',W/2,y);
+  ctx.fillStyle=grd; ctx.fillText('THẾ CHIẾN ẢO',W/2,y);
   ctx.shadowBlur=0;
   ctx.font="11px 'Courier New'"; ctx.fillStyle='#446';
-  ctx.fillText('— HEAVY ARMS EDITION —',W/2,y+32);
+  ctx.fillText('— VIRTUAL WORLD WAR —',W/2,y+32);
 }
 
 // ── MAIN MENU (drawn on canvas) ─────────────────────
@@ -435,7 +435,7 @@ let railgunCd=0,railgunMaxCd=120;
 // ── Player ─────────────────────────────────────────
 const P={
   x:W/2,y:H-110,w:52,h:44,speed:5,
-  hp:3,maxHp:3,missiles:3,maxMissiles:3,bombs:2,maxBombs:2,
+  hp:10,maxHp:10,missiles:3,maxMissiles:3,bombs:2,maxBombs:2,
   shootCd:0,shootRate:10,invincible:0,
   shield:false,shieldTimer:0,
   powerLevel:0,powerTimer:0,
@@ -1712,7 +1712,7 @@ function startGame(){
   plasmas=[];lightnings=[];railgunBeams=[];laserBeam=null;
   eMines=[];eShells=[];eLaserBeams=[];
   boss=null;bossBarEl.style.display='none';
-  Object.assign(P,{x:W/2,y:H-110,hp:3,missiles:3,bombs:2,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[]});
+  Object.assign(P,{x:W/2,y:H-110,hp:10,missiles:3,bombs:2,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[]});
   Object.assign(WEAPONS.plasma,   {ammo:3,cd:0});
   Object.assign(WEAPONS.lightning,{ammo:4,cd:0});
   Object.assign(WEAPONS.shotgun,  {ammo:3,cd:0});
