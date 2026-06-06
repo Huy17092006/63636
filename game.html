@@ -87,10 +87,7 @@ const W=480,H=700;
 const $=id=>document.getElementById(id);
 const hpRow=$('hpRow'),scoreBox=$('scoreBox'),lvlBox=$('lvlBox');
 const wepBox=$('wepBox'),comboWrap=$('comboWrap'),comboText=$('comboText'),comboFill=$('comboFill');
-const bossBarEl=$('bossBar'),bossFill=$('bossFill'),overlay=$('overlay');
-const hiValEl=$('hiVal');
-let hiScore=+localStorage.getItem('sb_hi')||0;
-hiValEl.textContent=hiScore.toLocaleString();
+const bossBarEl=$('bossBar'),bossFill=$('bossFill');
 
 // ── State ──────────────────────────────────────────
 const GS={MENU:0,PLAYING:1,GAMEOVER:2,LEADERBOARD:3,HOWTOPLAY:4,PAUSED:5};
