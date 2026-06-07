@@ -2034,14 +2034,6 @@ function initMobileControls(){
     el.addEventListener('touchcancel',e=>{onUp&&onUp();  e.preventDefault();},{passive:false});
   }
 
-  // Weapon buttons
-  _btn('mb1',()=>firePlasma());
-  _btn('mb2',()=>fireLightning());
-  _btn('mb3',()=>fireShotgun());
-  _btn('mb4',()=>{keys['4']=true;},()=>{keys['4']=false;});
-  _btn('mbBomb',()=>doBomb());
-  _btn('mbMsl', ()=>shootMissile());
-
   // Pause button
   _btn('mbPause',()=>{
     if(state===GS.PLAYING){state=GS.PAUSED;cancelAnimationFrame(animId);}
