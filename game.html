@@ -776,7 +776,7 @@ function doDash(){
 // ══════════════════════════════════════════════════
 let powerups=[];
 let wingmen=[];
-let lvAllyDrops=0,lvWepDrops=0;
+let lvAllyDrops=0,lvWepDrops=0,killDropCount=0;
 const PU={
   health:  {col:'#f44',icon:'♥'},  power:   {col:'#ff0',icon:'⚡'},
   shield:  {col:'#0ff',icon:'◎'},  missile: {col:'#f80',icon:'🚀'},
@@ -824,7 +824,7 @@ function applyPU(t){
         const idx=wingmen.length;
         const side=idx%2===0?-1:1;
         const row=Math.floor(idx/2);
-        wingmen.push({x:P.x+side*(54+row*38),y:P.y+30+row*10,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
+        wingmen.push({x:P.x+side*(54+row*38),y:P.y+30+row*10,hp:15,maxHp:15,shootCd:20+Math.random()*20,flash:0});
         showMsg('ALLY JOINED!','#4af',1200);
       }break;
     case 'w_double': lvWepDrops++;P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
@@ -1294,7 +1294,7 @@ function killEnemy(e){
     spawnParts(e.x,e.y,35,e.col,5);spawnParts(e.x,e.y,15,'#fff',3);
     shake(e.heavy?6:3);
   }
-  spawnPowerup(e.x,e.y);
+  killDropCount++;if(killDropCount%2===0)spawnPowerup(e.x,e.y);
   e.hp=0;
 }
 
@@ -1693,7 +1693,7 @@ function nextLevel(){
     winLoop();
     return;
   }
-  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28+level*6;lvAllyDrops=0;lvWepDrops=0;
+  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28+level*6;lvAllyDrops=0;lvWepDrops=0;killDropCount=0;
   P.hp=Math.min(P.maxHp,P.hp+1);
   formationTimer=0;enemySpawnTimer=60;
   waveNumber=0;waveState='idle';waveTimer=90;
@@ -1898,7 +1898,7 @@ function startGame(){
   eMines=[];eShells=[];eLaserBeams=[];
   boss=null;bossBarEl.style.display='none';
   pTouchX=null;pTouchY=null;pDragTid=-1;
-  wingmen=[];lvAllyDrops=0;lvWepDrops=0;
+  wingmen=[];lvAllyDrops=0;lvWepDrops=0;killDropCount=0;
   Object.assign(P,{x:W/2,y:H-110,hp:10,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[],wShots:1,wSpread:0,wCd:6,wDmg:1,wPiercing:false});
   enemySpawnTimer=80;formationTimer=200;
   $('ui').style.display='flex';
