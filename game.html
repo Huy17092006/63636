@@ -658,7 +658,7 @@ const drawShip=(x,y,col)=>drawF22(x,y,col);
 // ══════════════════════════════════════════════════
 let bullets=[],enemyBullets=[];
 // Special heavy projectiles
-let plasmas=[],lightnings=[],shotPellets=[],laserBeam=null,railgunBeams=[];
+let laserBeam=null;
 // Enemy heavy projectiles
 let eMines=[],eShells=[],eLaserBeams=[];
 
@@ -679,125 +679,11 @@ function shootPlayer(){
   }
 }
 
-// ── PLASMA BALL ─────────────────────────────────────
-function firePlasma(){
-  const w=WEAPONS.plasma;
-  if(w.ammo<=0||w.cd>0)return;
-  w.ammo--;w.cd=w.rate;sfx.plasma();
-  plasmas.push({x:P.x,y:P.y-P.h/2,vy:-5,r:16,dmg:10,life:180,pulse:0,trail:[]});
-  updateWepHUD();
-}
-function updatePlasmas(){
-  plasmas=plasmas.filter(p=>{
-    p.y+=p.vy;p.pulse+=.15;p.life--;
-    p.trail.push({x:p.x,y:p.y,l:1});if(p.trail.length>10)p.trail.shift();
-    p.trail.forEach(t=>{t.l-=.1;ctx.globalAlpha=t.l*.4;ctx.beginPath();ctx.arc(t.x,t.y,p.r*t.l,0,Math.PI*2);ctx.fillStyle='#0f8';ctx.fill();ctx.globalAlpha=1;});
-    // draw glow ball
-    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r+5);
-    g.addColorStop(0,'rgba(0,255,120,1)');g.addColorStop(.6,'rgba(0,200,80,.6)');g.addColorStop(1,'transparent');
-    ctx.beginPath();ctx.arc(p.x,p.y,p.r+Math.sin(p.pulse)*3,0,Math.PI*2);
-    ctx.fillStyle=g;ctx.fill();
-    ctx.shadowColor='#0f8';ctx.shadowBlur=20;ctx.strokeStyle='#0ff';ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
-    // hit enemies
-    const all=[...enemies,...(boss?[boss]:[])];
-    all.forEach(e=>{
-      if(Math.hypot(e.x-p.x,e.y-p.y)<p.r+e.w/2){
-        e.hp-=p.dmg;e.flash=8;shake(5);sfx.bossHit();
-        spawnParts(p.x,p.y,20,'#0f8',4);spawnParts(p.x,p.y,10,'#fff',3);
-        if(e.hp<=0){killEnemy(e);}
-        p.life=0;
-      }
-    });
-    return p.life>0&&p.y>-30;
-  });
-}
+// ── LASER BEAM stub (beam removed, kept for render call compatibility) ─
+function updateLaserW(){}
 
-// ── CHAIN LIGHTNING ────────────────────────────────
-function fireLightning(){
-  const w=WEAPONS.lightning;
-  if(w.ammo<=0||w.cd>0)return;
-  w.ammo--;w.cd=w.rate;sfx.lightning();
-  // find 3 closest enemies
-  const sorted=[...enemies,...(boss?[boss]:[])].sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)).slice(0,3);
-  if(!sorted.length)return;
-  lightnings.push({chain:sorted,start:{x:P.x,y:P.y},life:20,dmg:8});
-  sorted.forEach(e=>{e.hp-=8;e.flash=8;if(e.hp<=0)killEnemy(e);});
-  shake(3);updateWepHUD();
-}
-function updateLightnings(){
-  lightnings=lightnings.filter(ln=>{
-    ln.life--;
-    ctx.shadowColor='#aff';ctx.shadowBlur=15;ctx.strokeStyle=`rgba(160,255,255,${ln.life/20})`;ctx.lineWidth=2+Math.random()*2;
-    ctx.beginPath();ctx.moveTo(ln.start.x,ln.start.y);
-    ln.chain.forEach(e=>{
-      // jagged bolt
-      const steps=8,sx=ln.start.x,sy=ln.start.y,ex=e.x,ey=e.y;
-      for(let i=1;i<steps;i++){const t=i/steps;ctx.lineTo(sx+(ex-sx)*t+(Math.random()-.5)*30,sy+(ey-sy)*t+(Math.random()-.5)*30);}
-      ctx.lineTo(e.x,e.y);
-    });
-    ctx.stroke();ctx.shadowBlur=0;
-    return ln.life>0;
-  });
-}
-
-// ── SHOTGUN ────────────────────────────────────────
-function fireShotgun(){
-  const w=WEAPONS.shotgun;
-  if(w.ammo<=0||w.cd>0)return;
-  w.ammo--;w.cd=w.rate;sfx.shotgun();shake(4);
-  for(let a=-40;a<=40;a+=10){
-    const rad=(a-90)*Math.PI/180;
-    bullets.push({x:P.x,y:P.y-P.h/2,vx:Math.cos(rad)*14,vy:Math.sin(rad)*14,w:5,h:5,dmg:3,col:'#fa0',shotgun:true});
-  }
-  updateWepHUD();
-}
-
-// ── LASER BEAM (hold 4) ────────────────────────────
-function startLaserW(){
-  const w=WEAPONS.laserW;
-  if(w.ammo<=0)return;
-  laserBeam={active:true,x:P.x};
-}
-function updateLaserW(){
-  if(!laserBeam)return;
-  const w=WEAPONS.laserW;
-  if(!keys['4']||w.ammo<=0){laserBeam=null;return;}
-  w.cd--;if(w.cd<=0){w.ammo=Math.max(0,w.ammo-1);w.cd=w.rate;updateWepHUD();}
-  sfx.laserW();
-  laserBeam.x=P.x;
-  const bw=12;
-  // beam glow layers
-  [[bw+10,'rgba(255,255,100,0.15)'],[bw+4,'rgba(255,255,0,0.4)'],[bw,'rgba(255,255,150,0.9)']].forEach(([r,c])=>{
-    ctx.fillStyle=c;ctx.fillRect(P.x-r/2,0,r,P.y);
-  });
-  ctx.shadowColor='#ff8';ctx.shadowBlur=20;ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(P.x-3,0,6,P.y);ctx.shadowBlur=0;
-  // hit enemies
-  [...enemies,...(boss?[boss]:[])].forEach(e=>{
-    if(Math.abs(e.x-P.x)<bw/2+e.w/2&&e.y<P.y){e.hp-=.5;e.flash=2;if(e.hp<=0)killEnemy(e);}
-  });
-}
-
-// ── RAILGUN (R key) ───────────────────────────────
-function fireRailgun(){
-  if(railgunCd>0)return;
-  railgunCd=railgunMaxCd;sfx.railgun();shake(8);
-  // instant pierce hit ALL enemies in vertical line
-  const hitEnems=[...enemies,...(boss?[boss]:[])].filter(e=>Math.abs(e.x-P.x)<e.w/2+8);
-  hitEnems.forEach(e=>{e.hp-=20;e.flash=12;shake(5);if(e.hp<=0)killEnemy(e);});
-  railgunBeams.push({x:P.x,life:18});
-  updateWepHUD();
-}
-function updateRailgunBeams(){
-  railgunBeams=railgunBeams.filter(b=>{
-    b.life--;
-    const a=b.life/18;
-    ctx.shadowColor='#f8f';ctx.shadowBlur=30;
-    ctx.fillStyle=`rgba(255,160,255,${a})`;ctx.fillRect(b.x-15,0,30,H);
-    ctx.fillStyle=`rgba(255,255,255,${a*.9})`;ctx.fillRect(b.x-4,0,8,H);
-    ctx.shadowBlur=0;
-    return b.life>0;
-  });
-}
+// ── RAILGUN stub (kept for render call compatibility) ───────────────
+function updateRailgunBeams(){}
 
 // ── NORMAL BULLETS ─────────────────────────────────
 function updateBullets(){
@@ -879,24 +765,6 @@ function updateBullets(){
   });
 }
 
-// ── MISSILE (E) ─────────────────────────────────────
-function shootMissile(){
-  if(P.missiles<=0)return;P.missiles--;sfx.missile();
-  const all=[...enemies,...(boss?[boss]:[])];
-  const tgt=all.sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0]||null;
-  bullets.push({x:P.x,y:P.y-20,vx:0,vy:-5,w:7,h:18,dmg:7,missile:true,target:tgt,col:'#f80',trail:[]});
-  updateHUD();
-}
-
-// ── BOMB (Q) ──────────────────────────────────────────
-function doBomb(){
-  if(P.bombs<=0)return;P.bombs--;sfx.bomb();shake(14);
-  spawnParts(P.x,P.y,70,'#ff0',9,.012);spawnParts(P.x,P.y,50,'#f80',7,.015);
-  enemies.forEach(e=>{score+=Math.ceil(e.score*getMult());addCombo();spawnParts(e.x,e.y,20,e.col,4);});
-  enemies=[];enemyBullets=[];eMines=[];eShells=[];
-  if(boss){boss.hp-=70;boss.flash=20;shake(8);}
-  updateHUD();
-}
 
 // ── DASH ──────────────────────────────────────────────
 function doDash(){
@@ -924,17 +792,23 @@ const PU={
   shotgun: {col:'#fa0',icon:'⊕'},  laserW:  {col:'#ff8',icon:'▌'},
 };
 function spawnPowerup(x,y){
-  if(Math.random()>.3)return;
-  const wkeys=['plasma','lightning','shotgun','laserW'];
-  const basic=['health','power','shield','missile','bomb','score'];
-  const pool=Math.random()<.4?wkeys:basic;
-  const type=pool[Math.floor(Math.random()*pool.length)];
-  powerups.push({x,y,vy:1.4,type,r:14,spin:0});
+  let type;
+  if(Math.random()<.6&&wingmen.length<6){
+    type='ally_plane';
+  }else{
+    const wu=WU_TYPES[Math.floor(Math.random()*WU_TYPES.length)];
+    const basic=['health','health','shield','score'];
+    type=Math.random()<.65?wu.type:basic[Math.floor(Math.random()*basic.length)];
+  }
+  const col=type==='ally_plane'?'#4af':(WU_TYPES.find(w=>w.type===type)?.col||PU[type]?.col||'#fff');
+  powerups.push({x,y,vy:1.4,type,r:14,spin:0,col});
 }
 function updatePowerups(){
   powerups=powerups.filter(pu=>{
     pu.y+=pu.vy;pu.spin+=.04;
-    const {col,icon}=PU[pu.type];
+    const wu=WU_TYPES.find(w=>w.type===pu.type);
+    const col=pu.col||(PU[pu.type]?.col)||'#fff';
+    const icon=pu.type==='ally_plane'?'🛩':(wu?wu.icon:(PU[pu.type]?.icon||'?'));
     ctx.save();ctx.translate(pu.x,pu.y);ctx.rotate(pu.spin);
     ctx.shadowColor=col;ctx.shadowBlur=14;ctx.beginPath();ctx.arc(0,0,pu.r,0,Math.PI*2);ctx.fillStyle=col+'2a';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
     ctx.rotate(-pu.spin);ctx.font='bold 12px Courier New';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon,0,1);
