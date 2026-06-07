@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — Huy</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 28px;
+      max-width: 460px;
+      width: 100%;
+      padding: 40px 36px 36px;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+      animation: rise .6s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(30px) scale(.96); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── Avatar ── */
+    .avatar-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .avatar {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,.25);
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      margin: 0 auto;
+    }
+    .status-dot {
+      position: absolute; bottom: 6px; right: 6px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #4ade80;
+      border: 3px solid #1a1535;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}
+      50%{box-shadow:0 0 0 8px rgba(74,222,128,0)}
+    }
+
+    /* ── Name / Bio ── */
+    .name {
+      font-size: 26px; font-weight: 800;
+      background: linear-gradient(90deg,#a78bfa,#60a5fa,#34d399);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .handle {
+      font-size: 14px; color: rgba(255,255,255,.5);
+      margin: 4px 0 12px;
+    }
+    .bio {
+      font-size: 14px; line-height: 1.7; color: rgba(255,255,255,.75);
+      max-width: 340px; margin: 0 auto 24px;
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex; gap: 1px;
+      background: rgba(255,255,255,.08);
+      border-radius: 16px; overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .stat {
+      flex: 1; padding: 14px 8px;
+      background: rgba(255,255,255,.03);
+      transition: background .2s;
+    }
+    .stat:hover { background: rgba(255,255,255,.1); }
+    .stat-num { font-size: 20px; font-weight: 800; color: #fff; }
+    .stat-label { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Skills ── */
+    .skills {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin-bottom: 28px;
+    }
+    .skill {
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      border: 1.5px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+      cursor: default;
+      transition: all .2s;
+    }
+    .skill:hover {
+      border-color: rgba(167,139,250,.7);
+      background: rgba(167,139,250,.15);
+      color: #c4b5fd;
+    }
+
+    /* ── Buttons ── */
+    .actions { display: flex; gap: 12px; margin-bottom: 28px; }
+    .btn {
+      flex: 1; padding: 13px;
+      border-radius: 14px; border: none; cursor: pointer;
+      font-size: 14px; font-weight: 700;
+      transition: transform .15s, opacity .2s;
+      text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn:hover { transform: translateY(-2px); opacity: .9; }
+    .btn-primary {
+      background: linear-gradient(135deg,#7c3aed,#4f46e5);
+      color: #fff; box-shadow: 0 4px 18px rgba(124,58,237,.45);
+    }
+    .btn-outline {
+      background: rgba(255,255,255,.07);
+      border: 1.5px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.85);
+    }
+
+    /* ── Social Links ── */
+    .socials { display: flex; justify-content: center; gap: 16px; }
+    .social-link {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,.08);
+      border: 1.5px solid rgba(255,255,255,.12);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.7); font-size: 18px;
+      text-decoration: none; transition: all .2s;
+    }
+    .social-link:hover {
+      background: rgba(255,255,255,.18);
+      color: #fff; transform: translateY(-3px);
+      border-color: rgba(255,255,255,.35);
+      box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,.08);
+      margin: 24px 0;
+    }
+
+    /* ── Location ── */
+    .location {
+      font-size: 13px; color: rgba(255,255,255,.45);
+      margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Avatar -->
+  <div class="avatar-wrap">
+    <div class="avatar">🧑‍💻</div>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- Name -->
+  <div class="name">Nguyễn Gia Huy</div>
+  <div class="handle">@huy17092006</div>
+
+  <!-- Bio -->
+  <p class="bio">
+    Học sinh yêu thích lập trình & công nghệ 🚀<br>
+    Đam mê Web Development · AI · Thiết kế giao diện
+  </p>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">12</div>
+      <div class="stat-label">Projects</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">2.4k</div>
+      <div class="stat-label">Commits</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">48</div>
+      <div class="stat-label">Followers</div>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="skills">
+    <span class="skill">HTML / CSS</span>
+    <span class="skill">JavaScript</span>
+    <span class="skill">Python</span>
+    <span class="skill">Git</span>
+    <span class="skill">UI Design</span>
+    <span class="skill">AI / ML</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <a href="mailto:phunggiahuy99999@gmail.com" class="btn btn-primary">
+      ✉️ Liên hệ
+    </a>
+    <a href="https://github.com/huy17092006" class="btn btn-outline" target="_blank">
+      💻 GitHub
+    </a>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Socials -->
+  <div class="socials">
+    <a href="#" class="social-link" title="Facebook">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+    </a>
+    <a href="#" class="social-link" title="Instagram">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+    </a>
+    <a href="https://github.com/huy17092006" class="social-link" title="GitHub" target="_blank">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+    </a>
+    <a href="#" class="social-link" title="TikTok">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.16 8.16 0 0 0 4.77 1.52V6.76a4.85 4.85 0 0 1-1-.07z"/></svg>
+    </a>
+    <a href="#" class="social-link" title="YouTube">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#0f0c29"/></svg>
+    </a>
+  </div>
+
+  <div class="location">📍 Hà Nội, Việt Nam</div>
+</div>
+
+</body>
+</html>
