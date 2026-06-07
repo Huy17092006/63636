@@ -1468,7 +1468,7 @@ function spawnBoss(){
   const w=Math.min(Math.round(110*sc),210),h=Math.min(Math.round(85*sc),165);
   const tier=level<=30?Math.ceil(level/6):5+Math.ceil((level-30)/2);
   const names=['⚠ CRUISER','⚠ BATTLESHIP','⚠ ICE FORTRESS','⚠ DARK EMPEROR','⚠ VOID OVERLORD','⚠ CHAOS WARLORD','⚠ OMEGA DREAD','⚠ PHANTOM TITAN','⚠ INFERNO GOD','⚠ ETERNAL DOOM'];
-  const hp=level<=30?(300+level*50)*5:(2000+level*60)*5;
+  const hp=Math.round(5000*Math.pow(2,level-1));
   boss={x:W/2,y:-h-10,vx:2,vy:0,w,h,hp,maxHp:hp,pattern:0,ptTimer:0,shootCd:60,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0,burstActive:false,burstTimer:0,burstCd:0,shieldTimer:0,skillCd:300,activeSkill:null};
   bossBarEl.style.display='block';
   $('bossLabel').textContent=(names[Math.min(tier-1,9)])+' LV'+level+' ⚠';
