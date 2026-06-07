@@ -819,18 +819,25 @@ function updatePowerups(){
 }
 function applyPU(t){
   switch(t){
-    case 'health':   P.hp=Math.min(P.maxHp,P.hp+1);break;
-    case 'power':    P.powerLevel=Math.min(2,P.powerLevel+1);P.powerTimer=600;break;
-    case 'shield':   P.shield=true;P.shieldTimer=360;break;
-    case 'missile':  P.missiles=Math.min(P.maxMissiles,P.missiles+2);break;
-    case 'bomb':     P.bombs=Math.min(P.maxBombs,P.bombs+1);break;
-    case 'score':    score+=900*level;break;
-    case 'plasma':   WEAPONS.plasma.ammo=Math.min(WEAPONS.plasma.maxAmmo,WEAPONS.plasma.ammo+3);break;
-    case 'lightning':WEAPONS.lightning.ammo=Math.min(WEAPONS.lightning.maxAmmo,WEAPONS.lightning.ammo+4);break;
-    case 'shotgun':  WEAPONS.shotgun.ammo=Math.min(WEAPONS.shotgun.maxAmmo,WEAPONS.shotgun.ammo+3);break;
-    case 'laserW':   WEAPONS.laserW.ammo=Math.min(WEAPONS.laserW.maxAmmo,WEAPONS.laserW.ammo+8);break;
+    case 'health':  P.hp=Math.min(P.maxHp,P.hp+1);break;
+    case 'shield':  P.shield=true;P.shieldTimer=360;break;
+    case 'score':   score+=1200*level;break;
+    case 'ally_plane':
+      if(wingmen.length<6){
+        const idx=wingmen.length;
+        const side=idx%2===0?-1:1;
+        const row=Math.floor(idx/2);
+        wingmen.push({x:P.x+side*(50+row*40),y:P.y+30,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
+        showMsg('ALLY JOINED!','#4af',1200);
+      }break;
+    case 'w_double': P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
+    case 'w_spread': P.wSpread=Math.min(.45,P.wSpread+.1);showMsg('SPREAD!','#ff0',900);break;
+    case 'w_rapid':  P.wCd=Math.max(3,P.wCd-1);showMsg('RAPID FIRE!','#0f8',900);break;
+    case 'w_power':  P.wDmg=Math.min(4,P.wDmg+1);showMsg('POWER UP!','#f84',900);break;
+    case 'w_homing': P.wHoming=true;showMsg('HOMING!','#f0f',900);break;
+    case 'w_pierce': P.wPiercing=true;showMsg('PIERCE!','#aff',900);break;
   }
-  updateHUD();updateWepHUD();
+  updateHUD();
 }
 
 // ══════════════════════════════════════════════════
