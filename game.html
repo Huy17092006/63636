@@ -612,8 +612,8 @@ function drawF22(x,y,glowCol){
     ctx.stroke();ctx.shadowBlur=0;
   }
 
-  // ── WING MISSILE PODS (decorative) ──────────────
-  {
+  // ── WING MISSILE PODS ────────────────────────────
+  if(P.missiles>0){
     [[-22,4],[22,4]].forEach(([mx,my])=>{
       ctx.fillStyle='#c8c8d0';
       ctx.beginPath();ctx.roundRect(mx-2,my-5,4,10,2);ctx.fill();
@@ -819,79 +819,25 @@ function updatePowerups(){
 }
 function applyPU(t){
   switch(t){
-    case 'health':  P.hp=Math.min(P.maxHp,P.hp+1);break;
-    case 'shield':  P.shield=true;P.shieldTimer=360;break;
-    case 'score':   score+=1200*level;break;
-    case 'ally_plane':
-      if(wingmen.length<6){
-        const idx=wingmen.length;
-        const side=idx%2===0?-1:1;
-        const row=Math.floor(idx/2);
-        wingmen.push({x:P.x+side*(50+row*40),y:P.y+30,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
-        showMsg('ALLY JOINED!','#4af',1200);
-      }break;
-    case 'w_double': P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
-    case 'w_spread': P.wSpread=Math.min(.45,P.wSpread+.1);showMsg('SPREAD!','#ff0',900);break;
-    case 'w_rapid':  P.wCd=Math.max(3,P.wCd-1);showMsg('RAPID FIRE!','#0f8',900);break;
-    case 'w_power':  P.wDmg=Math.min(4,P.wDmg+1);showMsg('POWER UP!','#f84',900);break;
-    case 'w_homing': P.wHoming=true;showMsg('HOMING!','#f0f',900);break;
-    case 'w_pierce': P.wPiercing=true;showMsg('PIERCE!','#aff',900);break;
+    case 'health':   P.hp=Math.min(P.maxHp,P.hp+1);break;
+    case 'power':    P.powerLevel=Math.min(2,P.powerLevel+1);P.powerTimer=600;break;
+    case 'shield':   P.shield=true;P.shieldTimer=360;break;
+    case 'missile':  P.missiles=Math.min(P.maxMissiles,P.missiles+2);break;
+    case 'bomb':     P.bombs=Math.min(P.maxBombs,P.bombs+1);break;
+    case 'score':    score+=900*level;break;
+    case 'plasma':   WEAPONS.plasma.ammo=Math.min(WEAPONS.plasma.maxAmmo,WEAPONS.plasma.ammo+3);break;
+    case 'lightning':WEAPONS.lightning.ammo=Math.min(WEAPONS.lightning.maxAmmo,WEAPONS.lightning.ammo+4);break;
+    case 'shotgun':  WEAPONS.shotgun.ammo=Math.min(WEAPONS.shotgun.maxAmmo,WEAPONS.shotgun.ammo+3);break;
+    case 'laserW':   WEAPONS.laserW.ammo=Math.min(WEAPONS.laserW.maxAmmo,WEAPONS.laserW.ammo+8);break;
   }
-  updateHUD();
-}
-
-function drawWingman(wm){
-  const fl=wm.flash>0;
-  ctx.save();ctx.translate(wm.x,wm.y);
-  ctx.shadowColor='#4af';ctx.shadowBlur=fl?22:8;
-  ctx.scale(.52,.52);
-  // body
-  ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(-18,8);ctx.lineTo(-11,18);ctx.lineTo(11,18);ctx.lineTo(18,8);ctx.closePath();
-  ctx.fillStyle=fl?'#fff':'#0d2e52';ctx.fill();ctx.strokeStyle='#4af';ctx.lineWidth=2.2;ctx.stroke();
-  // wings
-  [-1,1].forEach(s=>{ctx.beginPath();ctx.moveTo(s*6,-2);ctx.lineTo(s*26,12);ctx.lineTo(s*14,17);ctx.closePath();ctx.fillStyle=fl?'#fff':'#0a2444';ctx.fill();ctx.strokeStyle='#4af';ctx.lineWidth=1.5;ctx.stroke();});
-  // canopy
-  ctx.beginPath();ctx.ellipse(0,-7,5,9,0,0,Math.PI*2);ctx.fillStyle=fl?'#fff':'rgba(80,200,255,.65)';ctx.fill();
-  // engine glow
-  ctx.beginPath();ctx.arc(0,20,6+Math.sin(frameCount*.2)*2,0,Math.PI*2);
-  const eg=ctx.createRadialGradient(0,20,0,0,20,8);eg.addColorStop(0,'rgba(80,200,255,.9)');eg.addColorStop(1,'transparent');
-  ctx.fillStyle=eg;ctx.fill();
-  ctx.restore();ctx.shadowBlur=0;
-}
-function updateWingmen(){
-  wingmen.forEach((wm,i)=>{
-    const side=i%2===0?-1:1,row=Math.floor(i/2);
-    const tx=Math.max(24,Math.min(W-24,P.x+side*(52+row*42)));
-    const ty=Math.max(24,Math.min(H-40,P.y+22+row*8));
-    wm.x+=(tx-wm.x)*.12;wm.y+=(ty-wm.y)*.12;
-    if(wm.flash>0)wm.flash--;
-    wm.shootCd--;
-    if(wm.shootCd<=0){
-      wm.shootCd=16+Math.random()*8;
-      const ns=Math.min(P.wShots,3);
-      for(let j=0;j<ns;j++){
-        const off=ns>1?(j-(ns-1)/2)*12:0;
-        bullets.push({x:wm.x+off,y:wm.y-18,vx:0,vy:-13,w:4,h:12,dmg:P.wDmg,col:'#4af',piercing:P.wPiercing});
-      }
-      beep(380,.02,'sine',.03);
-    }
-    drawWingman(wm);
-    enemyBullets=enemyBullets.filter(b=>{
-      if(Math.hypot(b.x-wm.x,b.y-wm.y)<22){wm.hp--;wm.flash=12;spawnParts(b.x,b.y,8,'#4af',3);return false;}
-      return true;
-    });
-  });
-  wingmen=wingmen.filter(wm=>{
-    if(wm.hp<=0){spawnParts(wm.x,wm.y,30,'#4af',5);shake(5);sfx.hit();return false;}
-    return true;
-  });
+  updateHUD();updateWepHUD();
 }
 
 // ══════════════════════════════════════════════════
 //  ENEMIES  (5 normal + 4 heavy)
 // ══════════════════════════════════════════════════
 let enemies=[],enemySpawnTimer=0;
-let boss=null,bossLevel=false,enemiesSpawned=0,enemiesForBoss=28;
+let boss=null,bossLevel=false,enemiesSpawned=0,enemiesForBoss=18;
 
 const ET={
   scout:    {w:30,h:28,hp:1, spd:2.2,score:100,col:'#f44', shootRate:95,  heavy:false},
@@ -1403,7 +1349,7 @@ function updateEnemies(){
     // bullet hits
     bullets.forEach(b=>{
       const hit=b.shotgun?Math.hypot(b.x-e.x,b.y-e.y)<e.w/2+6:rectsOvlp(b,e);
-      if(!b.hit&&hit){e.hp-=b.dmg;e.flash=5;if(!b.piercing)b.hit=true;sfx.hit();spawnParts(b.x,b.y,6,'#fff',2);}
+      if(!b.hit&&hit){e.hp-=b.dmg;e.flash=5;b.hit=true;sfx.hit();spawnParts(b.x,b.y,6,'#fff',2);}
     });
     bullets=bullets.filter(b=>!b.hit);
 
@@ -1696,31 +1642,36 @@ function nextLevel(){
     winLoop();
     return;
   }
-  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28+level*6;
-  P.hp=Math.min(P.maxHp,P.hp+1);
+  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=18+level*5;
+  P.missiles=P.maxMissiles;P.bombs=Math.min(P.maxBombs,P.bombs+1);
   formationTimer=0;enemySpawnTimer=60;
   waveNumber=0;waveState='idle';waveTimer=90;
-  updateHUD();sfx.lvlUp();
+  Object.values(WEAPONS).forEach(w=>w.ammo=Math.min(w.maxAmmo,w.ammo+2));
+  updateHUD();updateWepHUD();sfx.lvlUp();
   showMsg(`LEVEL ${level}!`,'#ff0',2200);
-  for(let i=0;i<3;i++)powerups.push({x:80+Math.random()*(W-160),y:100+Math.random()*200,vy:1,type:['health','shield','score'][i],r:14,spin:0,col:['#f44','#0ff','#0f4'][i]});
+  for(let i=0;i<3;i++)powerups.push({x:80+Math.random()*(W-160),y:100+Math.random()*200,vy:1,type:['health','power','shield'][i],r:14,spin:0});
 }
 
 // ── HUD ─────────────────────────────────────────────
 function updateHUD(){
   let h='';
   for(let i=0;i<P.maxHp;i++)h+=`<span style="font-size:15px;opacity:${i<P.hp?1:.2}">❤</span>`;
+  h+=' ';
+  for(let i=0;i<P.maxMissiles;i++)h+=`<span style="font-size:11px;opacity:${i<P.missiles?1:.2}">🚀</span>`;
+  h+=' ';
+  for(let i=0;i<P.maxBombs;i++)h+=`<span style="font-size:11px;opacity:${i<P.bombs?1:.2}">💣</span>`;
   hpRow.innerHTML=h;
   scoreBox.textContent=`${score.toLocaleString()}`;
   lvlBox.textContent=bossLevel?'⚠ BOSS':`LV${level}`;
-  // Weapon build display
-  let wInfo=`<span style="color:#888">SHOTS:</span><span style="color:#0ff">${P.wShots}</span> `;
-  wInfo+=`<span style="color:#888">DMG:</span><span style="color:#f84">${P.wDmg}</span> `;
-  wInfo+=`<span style="color:#888">CD:</span><span style="color:#0f8">${P.wCd}</span>`;
-  if(P.wHoming)wInfo+=` <span style="color:#f0f">⊙HOM</span>`;
-  if(P.wPiercing)wInfo+=` <span style="color:#aff">▷PRC</span>`;
-  if(P.wSpread>0)wInfo+=` <span style="color:#ff0">⊳SPR</span>`;
-  if(wingmen.length>0)wInfo+=` <span style="color:#4af">🛩×${wingmen.length}</span>`;
-  wepBox.innerHTML=wInfo;
+}
+function updateWepHUD(){
+  const w=WEAPONS;
+  const rg=railgunCd<=0?'<span style="color:#f8f">RG:RDY</span>':'<span style="color:#888">RG:'+(Math.ceil(railgunCd/60*10)/10).toFixed(1)+'s</span>';
+  wepBox.innerHTML=
+    `<span style="color:#0f8">①${w.plasma.ammo}/${w.plasma.maxAmmo}</span> `+
+    `<span style="color:#aff">②${w.lightning.ammo}/${w.lightning.maxAmmo}</span> `+
+    `<span style="color:#fa0">③${w.shotgun.ammo}/${w.shotgun.maxAmmo}</span> `+
+    `<span style="color:#ff8">④${w.laserW.ammo}/${w.laserW.maxAmmo}</span> `+rg;
 }
 
 // ══════════════════════════════════════════════════
@@ -1754,8 +1705,20 @@ function update(){
 
   // normal shoot
   P.shootCd=Math.max(0,P.shootCd-1);
-  if(P.shootCd<=0){shootPlayer();P.shootCd=P.wCd;}
+  if(P.shootCd<=0){shootPlayer();P.shootCd=6;}
 
+  // heavy weapons
+  if(just('1'))firePlasma();
+  if(just('2'))fireLightning();
+  if(just('3'))fireShotgun();
+  if(keys['4'])startLaserW();
+  if(just('r')||just('R'))fireRailgun();
+  if(just('e')||just('E'))shootMissile();
+  if(just('q')||just('Q'))doBomb();
+
+  // cooldowns
+  Object.values(WEAPONS).forEach(w=>{if(w.cd>0)w.cd--;});
+  if(railgunCd>0)railgunCd--;
   if(P.invincible>0)P.invincible--;
   if(P.shield){P.shieldTimer--;if(P.shieldTimer<=0)P.shield=false;}
   if(P.powerLevel>0){P.powerTimer--;if(P.powerTimer<=0)P.powerLevel=0;}
@@ -1854,8 +1817,8 @@ function render(){
   updateRailgunBeams();
   updateLaserW();
   updateBullets();
+  updatePlasmas();updateLightnings();
   updatePowerups();
-  updateWingmen();
   if(!bossLevel)updateEnemies();else updateBoss();
   checkEnemyBullets();
   drawPlayer();
@@ -1894,22 +1857,25 @@ function gameLoop(){update();render();animId=requestAnimationFrame(gameLoop);}
 // ══════════════════════════════════════════════════
 function startGame(){
   ensureAudio();
-  score=0;level=1;frameCount=0;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28;
+  score=0;level=1;frameCount=0;bossLevel=false;enemiesSpawned=0;enemiesForBoss=18;
   waveNumber=0;waveState='idle';waveTimer=90;
   combo=0;comboTimer=0;comboWrap.style.display='none';
   parts=[];bullets=[];enemyBullets=[];enemies=[];powerups=[];msgs=[];
-  laserBeam=null;
+  plasmas=[];lightnings=[];railgunBeams=[];laserBeam=null;
   eMines=[];eShells=[];eLaserBeams=[];
   boss=null;bossBarEl.style.display='none';
   pTouchX=null;pTouchY=null;pDragTid=-1;
-  wingmen=[];
-  Object.assign(P,{x:W/2,y:H-110,hp:10,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[]});
-  Object.assign(P,{wShots:1,wSpread:0,wCd:6,wDmg:1,wHoming:false,wPiercing:false});
+  Object.assign(P,{x:W/2,y:H-110,hp:10,missiles:3,bombs:2,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[]});
+  Object.assign(WEAPONS.plasma,   {ammo:3,cd:0});
+  Object.assign(WEAPONS.lightning,{ammo:4,cd:0});
+  Object.assign(WEAPONS.shotgun,  {ammo:3,cd:0});
+  Object.assign(WEAPONS.laserW,   {ammo:6,cd:0});
+  railgunCd=0;
   enemySpawnTimer=80;formationTimer=200;
   $('ui').style.display='flex';
   if(_isTouch())$('mobileCtrl').style.display='block';
   state=GS.PLAYING;
-  updateHUD();
+  updateHUD();updateWepHUD();
   if(animId)cancelAnimationFrame(animId);
   gameLoop();
 }
@@ -2035,6 +2001,14 @@ function initMobileControls(){
     el.addEventListener('touchend',  e=>{onUp&&onUp();   e.preventDefault();},{passive:false});
     el.addEventListener('touchcancel',e=>{onUp&&onUp();  e.preventDefault();},{passive:false});
   }
+
+  // Weapon buttons
+  _btn('mb1',()=>firePlasma());
+  _btn('mb2',()=>fireLightning());
+  _btn('mb3',()=>fireShotgun());
+  _btn('mb4',()=>{keys['4']=true;},()=>{keys['4']=false;});
+  _btn('mbBomb',()=>doBomb());
+  _btn('mbMsl', ()=>shootMissile());
 
   // Pause button
   _btn('mbPause',()=>{
