@@ -662,7 +662,7 @@ let eMines=[],eShells=[],eLaserBeams=[];
 
 function shootPlayer(){
   sfx.shoot();
-  const{wShots:ns,wSpread:sp,wPiercing:pier}=P;const dmg=P.wDmg*0.8;
+  const{wShots:ns,wSpread:sp,wDmg:dmg,wPiercing:pier}=P;
   for(let i=0;i<ns;i++){
     const off=ns>1?(i-(ns-1)/2)*14:0;
     const ang=ns>1?(i-(ns-1)/2)*sp:0;
@@ -785,7 +785,7 @@ const PU={
   shotgun: {col:'#fa0',icon:'⊕'},  laserW:  {col:'#ff8',icon:'▌'},
 };
 function spawnPowerup(x,y){
-  const canAlly=wingmen.length<2&&lvAllyDrops<2;
+  const canAlly=wingmen.length<5&&lvAllyDrops<5;
   const canWep=lvWepDrops<4;
   if(!canAlly&&!canWep)return;
   let type;
@@ -819,11 +819,12 @@ function applyPU(t){
     case 'shield':  P.shield=true;P.shieldTimer=360;break;
     case 'score':   score+=1200*level;break;
     case 'ally_plane':
-      if(wingmen.length<2){
+      if(wingmen.length<5){
         lvAllyDrops++;
         const idx=wingmen.length;
         const side=idx%2===0?-1:1;
-        wingmen.push({x:P.x+side*54,y:P.y+30,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
+        const row=Math.floor(idx/2);
+        wingmen.push({x:P.x+side*(54+row*38),y:P.y+30+row*10,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
         showMsg('ALLY JOINED!','#4af',1200);
       }break;
     case 'w_double': lvWepDrops++;P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
@@ -855,9 +856,10 @@ function drawWingman(wm){
 }
 function updateWingmen(){
   wingmen.forEach((wm,i)=>{
-    const side=i===0?-1:1;
-    const tx=Math.max(24,Math.min(W-24,P.x+side*54));
-    const ty=Math.max(24,Math.min(H-40,P.y+22));
+    const side=i%2===0?-1:1;
+    const row=Math.floor(i/2);
+    const tx=Math.max(24,Math.min(W-24,P.x+side*(54+row*38)));
+    const ty=Math.max(24,Math.min(H-40,P.y+22+row*10));
     wm.x+=(tx-wm.x)*.12;wm.y+=(ty-wm.y)*.12;
     if(wm.flash>0)wm.flash--;
     wm.shootCd--;
@@ -866,7 +868,7 @@ function updateWingmen(){
       const ns=Math.min(P.wShots,3);
       for(let j=0;j<ns;j++){
         const off=ns>1?(j-(ns-1)/2)*12:0;
-        bullets.push({x:wm.x+off,y:wm.y-18,vx:0,vy:-13,w:4,h:12,dmg:P.wDmg*0.8,col:'#4af',piercing:P.wPiercing});
+        bullets.push({x:wm.x+off,y:wm.y-18,vx:0,vy:-13,w:4,h:12,dmg:P.wDmg,col:'#4af',piercing:P.wPiercing});
       }
       beep(380,.02,'sine',.03);
     }
@@ -1468,7 +1470,7 @@ function spawnBoss(){
   const w=Math.min(Math.round(110*sc),210),h=Math.min(Math.round(85*sc),165);
   const tier=level<=30?Math.ceil(level/6):5+Math.ceil((level-30)/2);
   const names=['⚠ CRUISER','⚠ BATTLESHIP','⚠ ICE FORTRESS','⚠ DARK EMPEROR','⚠ VOID OVERLORD','⚠ CHAOS WARLORD','⚠ OMEGA DREAD','⚠ PHANTOM TITAN','⚠ INFERNO GOD','⚠ ETERNAL DOOM'];
-  const hp=Math.round(5000*Math.pow(2,level-1));
+  const hp=level===1?1500:Math.round(5000*Math.pow(2,level-1));
   boss={x:W/2,y:-h-10,vx:2,vy:0,w,h,hp,maxHp:hp,pattern:0,ptTimer:0,shootCd:60,flash:0,minY:95,reached:false,enraged:false,laserBarrage:0,summonCd:0,burstActive:false,burstTimer:0,burstCd:0,shieldTimer:0,skillCd:300,activeSkill:null};
   bossBarEl.style.display='block';
   $('bossLabel').textContent=(names[Math.min(tier-1,9)])+' LV'+level+' ⚠';
