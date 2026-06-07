@@ -6,8 +6,8 @@
 <title>Thế Chiến Ảo</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace}
-  #wrap{position:relative;width:480px;height:700px}
+  body{background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;touch-action:none}
+  #wrap{position:relative;width:480px;height:700px;transform-origin:top left}
   canvas{display:block;border:2px solid #0ff;box-shadow:0 0 30px #0ff4,0 0 60px #0ff2}
 
   /* ── In-game HUD ── */
@@ -52,6 +52,48 @@
 
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
   @keyframes slideIn{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  /* ── Mobile controls ── */
+  #mobileCtrl{position:absolute;inset:0;pointer-events:none;display:none;z-index:20}
+  #joystickZone{
+    position:absolute;bottom:22px;left:14px;
+    width:118px;height:118px;border-radius:50%;
+    background:rgba(0,255,255,.07);border:2px solid rgba(0,255,255,.25);
+    pointer-events:all;touch-action:none;
+  }
+  #joystickKnob{
+    position:absolute;top:50%;left:50%;
+    width:44px;height:44px;border-radius:50%;
+    margin:-22px 0 0 -22px;
+    background:radial-gradient(circle,rgba(0,255,255,.75),rgba(0,140,140,.3));
+    border:2px solid #0ff;box-shadow:0 0 12px #0ff5;pointer-events:none;
+  }
+  .mbtn{
+    position:absolute;pointer-events:all;touch-action:none;
+    width:54px;height:54px;border-radius:10px;
+    background:rgba(0,0,0,.55);border:2px solid;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Courier New',monospace;font-weight:bold;
+    user-select:none;-webkit-user-select:none;
+    box-shadow:0 0 8px currentColor;transition:opacity .1s;
+  }
+  .mbtn:active{opacity:.6}
+  .mbtn .bicon{font-size:18px;line-height:1}
+  .mbtn .blabel{font-size:9px;line-height:1;margin-top:2px;letter-spacing:1px}
+  #mb1{bottom:90px;right:76px;border-color:#0f8;color:#0f8}
+  #mb2{bottom:90px;right:16px;border-color:#aff;color:#aff}
+  #mb3{bottom:28px;right:76px;border-color:#fa0;color:#fa0}
+  #mb4{bottom:28px;right:16px;border-color:#ff8;color:#ff8}
+  #mbBomb{bottom:90px;right:138px;width:46px;height:46px;border-color:#f84;color:#f84}
+  #mbMsl {bottom:28px;right:138px;width:46px;height:46px;border-color:#f0f;color:#f0f}
+  #mbPause{
+    position:absolute;top:8px;right:8px;
+    width:36px;height:36px;border-radius:8px;
+    background:rgba(0,0,0,.65);border:1px solid rgba(0,255,255,.35);
+    color:#0ff;font-size:17px;pointer-events:all;touch-action:none;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 6px #0ff3;
+  }
 </style>
 </head>
 <body>
@@ -71,6 +113,17 @@
   <div id="bossBar">
     <div id="bossLabel">⚠ BOSS ⚠</div>
     <div id="bossBg"><div id="bossFill" style="width:100%"></div></div>
+  </div>
+  <!-- Mobile controls (shown only during gameplay on touch devices) -->
+  <div id="mobileCtrl">
+    <div id="joystickZone"><div id="joystickKnob"></div></div>
+    <div class="mbtn" id="mb1"><span class="bicon">①</span><span class="blabel">PLASMA</span></div>
+    <div class="mbtn" id="mb2"><span class="bicon">②</span><span class="blabel">BOLT</span></div>
+    <div class="mbtn" id="mb3"><span class="bicon">③</span><span class="blabel">SHOT</span></div>
+    <div class="mbtn" id="mb4"><span class="bicon">④</span><span class="blabel">LASER</span></div>
+    <div class="mbtn" id="mbBomb"><span class="bicon">💣</span><span class="blabel">BOMB</span></div>
+    <div class="mbtn" id="mbMsl"><span class="bicon">🚀</span><span class="blabel">MSL</span></div>
+    <div id="mbPause">⏸</div>
   </div>
   <!-- name input modal -->
   <div id="nameModal">
@@ -1729,6 +1782,7 @@ function nextLevel(){
   if(level>=40){
     cancelAnimationFrame(animId);
     $('ui').style.display='none';
+    $('mobileCtrl').style.display='none';
     state=GS.WIN;
     saveScore('WINNER',score,level);
     hiScore=getScores()[0]?.score||0;
@@ -1956,6 +2010,7 @@ function startGame(){
   railgunCd=0;
   enemySpawnTimer=80;formationTimer=200;
   $('ui').style.display='flex';
+  if(_isTouch())$('mobileCtrl').style.display='block';
   state=GS.PLAYING;
   updateHUD();updateWepHUD();
   if(animId)cancelAnimationFrame(animId);
@@ -1966,6 +2021,7 @@ function endGame(){
   state=GS.GAMEOVER;
   cancelAnimationFrame(animId);
   $('ui').style.display='none';
+  $('mobileCtrl').style.display='none';
   sfx.die();
   // check if new record → ask name
   if(isNewRecord(score)){
@@ -2006,6 +2062,109 @@ function winLoop(){
   drawWin();
   animId=requestAnimationFrame(winLoop);
 }
+
+// ══════════════════════════════════════════════════
+//  MOBILE / RESPONSIVE
+// ══════════════════════════════════════════════════
+const _isTouch=()=>('ontouchstart' in window)||navigator.maxTouchPoints>0;
+
+function resizeGame(){
+  const sx=window.innerWidth/480,sy=window.innerHeight/700;
+  const sc=Math.min(sx,sy);
+  const wrap=$('wrap');
+  wrap.style.transform=`scale(${sc})`;
+  wrap.style.left=`${(window.innerWidth-480*sc)/2}px`;
+  wrap.style.top=`${(window.innerHeight-700*sc)/2}px`;
+  wrap.style.position='absolute';
+}
+window.addEventListener('resize',resizeGame);
+resizeGame();
+
+function initMobileControls(){
+  if(!_isTouch())return;
+
+  // Canvas tap → menu navigation
+  canvas.addEventListener('touchstart',e=>{
+    const t=e.changedTouches[0];
+    const r=canvas.getBoundingClientRect();
+    const cx=(t.clientX-r.left)*(480/r.width);
+    const cy=(t.clientY-r.top)*(700/r.height);
+    _handleCanvasTouch(cx,cy);
+    e.preventDefault();
+  },{passive:false});
+
+  // Joystick
+  const jZone=$('joystickZone'),jKnob=$('joystickKnob');
+  let jTid=-1,jCx=0,jCy=0;const JR=44;
+  function _jUpdate(cx,cy){
+    let dx=cx-jCx,dy=cy-jCy,d=Math.hypot(dx,dy);
+    if(d>JR){dx*=JR/d;dy*=JR/d;}
+    jKnob.style.transform=`translate(${dx}px,${dy}px)`;
+    const th=JR*.28;
+    keys['ArrowLeft']=dx<-th;keys['ArrowRight']=dx>th;
+    keys['ArrowUp']=dy<-th;keys['ArrowDown']=dy>th;
+  }
+  function _jClear(){
+    jTid=-1;jKnob.style.transform='';
+    ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].forEach(k=>keys[k]=false);
+  }
+  jZone.addEventListener('touchstart',e=>{
+    const t=e.changedTouches[0];
+    jTid=t.identifier;
+    const r=jZone.getBoundingClientRect();
+    jCx=r.left+r.width/2;jCy=r.top+r.height/2;
+    _jUpdate(t.clientX,t.clientY);e.preventDefault();
+  },{passive:false});
+  jZone.addEventListener('touchmove',e=>{
+    for(const t of e.changedTouches)if(t.identifier===jTid){_jUpdate(t.clientX,t.clientY);}
+    e.preventDefault();
+  },{passive:false});
+  jZone.addEventListener('touchend',e=>{
+    for(const t of e.changedTouches)if(t.identifier===jTid)_jClear();
+    e.preventDefault();
+  },{passive:false});
+  jZone.addEventListener('touchcancel',e=>{_jClear();e.preventDefault();},{passive:false});
+
+  // Helper: tap button
+  function _btn(id,onDown,onUp){
+    const el=$(id);if(!el)return;
+    el.addEventListener('touchstart',e=>{onDown&&onDown();e.preventDefault();},{passive:false});
+    el.addEventListener('touchend',  e=>{onUp&&onUp();   e.preventDefault();},{passive:false});
+    el.addEventListener('touchcancel',e=>{onUp&&onUp();  e.preventDefault();},{passive:false});
+  }
+
+  // Weapon buttons
+  _btn('mb1',()=>firePlasma());
+  _btn('mb2',()=>fireLightning());
+  _btn('mb3',()=>fireShotgun());
+  _btn('mb4',()=>{keys['4']=true;},()=>{keys['4']=false;});
+  _btn('mbBomb',()=>doBomb());
+  _btn('mbMsl', ()=>shootMissile());
+
+  // Pause button
+  _btn('mbPause',()=>{
+    if(state===GS.PLAYING){state=GS.PAUSED;cancelAnimationFrame(animId);}
+    else if(state===GS.PAUSED)resumeGame();
+  });
+}
+
+function _handleCanvasTouch(cx,cy){
+  if(state===GS.MENU){
+    if(cy>295&&cy<345)startGame();
+    else if(cy>358&&cy<408){state=GS.LEADERBOARD;cancelAnimationFrame(animId);menuLoop();}
+    else if(cy>420&&cy<470){state=GS.HOWTOPLAY;cancelAnimationFrame(animId);menuLoop();}
+  }else if(state===GS.LEADERBOARD||state===GS.HOWTOPLAY){
+    state=GS.MENU;cancelAnimationFrame(animId);menuLoop();
+  }else if(state===GS.GAMEOVER){
+    if(cy>472&&cy<508)startGame();
+    else if(cy>524&&cy<560){state=GS.MENU;menuLoop();}
+  }else if(state===GS.WIN){
+    if(cy>412&&cy<448)startGame();
+    else if(cy>458&&cy<494){state=GS.MENU;cancelAnimationFrame(animId);menuLoop();}
+  }
+}
+
+initMobileControls();
 
 function menuLoop(){
   const inMenu=state===GS.MENU||state===GS.LEADERBOARD||state===GS.HOWTOPLAY;
