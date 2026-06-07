@@ -56,24 +56,6 @@
   /* ── Mobile controls ── */
   #mobileCtrl{position:absolute;inset:0;pointer-events:none;display:none;z-index:20}
 
-  .mbtn{
-    position:absolute;pointer-events:all;touch-action:none;
-    width:54px;height:54px;border-radius:10px;
-    background:rgba(0,0,0,.55);border:2px solid;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-family:'Courier New',monospace;font-weight:bold;
-    user-select:none;-webkit-user-select:none;
-    box-shadow:0 0 8px currentColor;transition:opacity .1s;
-  }
-  .mbtn:active{opacity:.6}
-  .mbtn .bicon{font-size:18px;line-height:1}
-  .mbtn .blabel{font-size:9px;line-height:1;margin-top:2px;letter-spacing:1px}
-  #mb1{bottom:90px;right:76px;border-color:#0f8;color:#0f8}
-  #mb2{bottom:90px;right:16px;border-color:#aff;color:#aff}
-  #mb3{bottom:28px;right:76px;border-color:#fa0;color:#fa0}
-  #mb4{bottom:28px;right:16px;border-color:#ff8;color:#ff8}
-  #mbBomb{bottom:90px;right:138px;width:46px;height:46px;border-color:#f84;color:#f84}
-  #mbMsl {bottom:28px;right:138px;width:46px;height:46px;border-color:#f0f;color:#f0f}
   #mbPause{
     position:absolute;top:8px;right:8px;
     width:36px;height:36px;border-radius:8px;
@@ -104,13 +86,6 @@
   </div>
   <!-- Mobile controls (shown only during gameplay on touch devices) -->
   <div id="mobileCtrl">
-
-    <div class="mbtn" id="mb1"><span class="bicon">①</span><span class="blabel">PLASMA</span></div>
-    <div class="mbtn" id="mb2"><span class="bicon">②</span><span class="blabel">BOLT</span></div>
-    <div class="mbtn" id="mb3"><span class="bicon">③</span><span class="blabel">SHOT</span></div>
-    <div class="mbtn" id="mb4"><span class="bicon">④</span><span class="blabel">LASER</span></div>
-    <div class="mbtn" id="mbBomb"><span class="bicon">💣</span><span class="blabel">BOMB</span></div>
-    <div class="mbtn" id="mbMsl"><span class="bicon">🚀</span><span class="blabel">MSL</span></div>
     <div id="mbPause">⏸</div>
   </div>
   <!-- name input modal -->
@@ -485,25 +460,21 @@ function addCombo(){combo++;comboTimer=CWINDOW;if(combo>=2){comboWrap.style.disp
 function updateCombo(){if(comboTimer>0){comboTimer--;comboFill.style.width=(comboTimer/CWINDOW*100)+'%';if(comboTimer<=0){combo=0;comboWrap.style.display='none';}}}
 const getMult=()=>Math.min(1+combo*.15,4);
 
-// ══════════════════════════════════════════════════
-//  PLAYER WEAPON SLOTS
-// ══════════════════════════════════════════════════
-// Each heavy weapon has: ammo, cooldown, active toggle
-const WEAPONS={
-  plasma:   {ammo:0,maxAmmo:5, cd:0,rate:45, name:'PLASMA BALL',   col:'#0f8'},
-  lightning:{ammo:0,maxAmmo:8, cd:0,rate:30, name:'CHAIN LIGHTNING',col:'#aff'},
-  shotgun:  {ammo:0,maxAmmo:6, cd:0,rate:20, name:'SHOTGUN SPREAD', col:'#fa0'},
-  laserW:   {ammo:0,maxAmmo:10,cd:0,rate:4,  name:'LASER BEAM',     col:'#ff8'},
-};
-const WEP_ORDER=['plasma','lightning','shotgun','laserW'];
-let activeWep='normal'; // normal | plasma | lightning | shotgun | laserW | railgun
-let railgunCd=0,railgunMaxCd=120;
+// ── Weapon upgrade definitions ──────────────────────
+const WU_TYPES=[
+  {type:'w_double', col:'#0ff', icon:'◈', label:'DBL'},
+  {type:'w_spread', col:'#ff0', icon:'⊳', label:'SPR'},
+  {type:'w_rapid',  col:'#0f8', icon:'▶', label:'RPD'},
+  {type:'w_power',  col:'#f84', icon:'⊕', label:'PWR'},
+  {type:'w_homing', col:'#f0f', icon:'⊙', label:'HOM'},
+  {type:'w_pierce', col:'#aff', icon:'▷', label:'PRC'},
+];
 
 // ── Player ─────────────────────────────────────────
 const P={
   x:W/2,y:H-110,w:52,h:44,speed:5,
-  hp:10,maxHp:10,missiles:3,maxMissiles:3,bombs:2,maxBombs:2,
-  shootCd:0,shootRate:10,invincible:0,
+  hp:10,maxHp:10,
+  shootCd:0,shootRate:10,wShots:1,wSpread:0,wCd:6,wDmg:1,wHoming:false,wPiercing:false,invincible:0,
   shield:false,shieldTimer:0,
   powerLevel:0,powerTimer:0,
   dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,
@@ -693,10 +664,19 @@ let eMines=[],eShells=[],eLaserBeams=[];
 
 function shootPlayer(){
   sfx.shoot();
-  const lv=P.powerLevel;
-  if(lv===0){bullets.push({x:P.x,y:P.y-P.h/2,vx:0,vy:-13,w:4,h:13,dmg:1,col:'#0ff'});}
-  else if(lv===1){bullets.push({x:P.x-10,y:P.y-P.h/3,vx:0,vy:-13,w:4,h:13,dmg:1,col:'#0ff'});bullets.push({x:P.x+10,y:P.y-P.h/3,vx:0,vy:-13,w:4,h:13,dmg:1,col:'#0ff'});}
-  else{bullets.push({x:P.x,y:P.y-P.h/2,vx:0,vy:-15,w:5,h:15,dmg:2,col:'#ff0'});bullets.push({x:P.x-13,y:P.y-P.h/3,vx:-1.5,vy:-13,w:4,h:13,dmg:1,col:'#0ff'});bullets.push({x:P.x+13,y:P.y-P.h/3,vx:1.5,vy:-13,w:4,h:13,dmg:1,col:'#0ff'});}
+  const{wShots:ns,wSpread:sp,wDmg:dmg,wHoming:hom,wPiercing:pier}=P;
+  for(let i=0;i<ns;i++){
+    const off=ns>1?(i-(ns-1)/2)*14:0;
+    const ang=ns>1?(i-(ns-1)/2)*sp:0;
+    const spd=14;
+    if(hom){
+      const all=[...enemies,...(boss?[boss]:[])];
+      const tgt=all.sort((a,b)=>Math.hypot(a.x-(P.x+off),a.y-P.y)-Math.hypot(b.x-(P.x+off),b.y-P.y))[0]||null;
+      bullets.push({x:P.x+off,y:P.y-P.h/2,vx:0,vy:-12,w:5,h:14,dmg,col:'#f0f',missile:!!tgt,target:tgt,trail:tgt?[]:undefined,piercing:pier});
+    }else{
+      bullets.push({x:P.x+off,y:P.y-P.h/2,vx:Math.sin(ang)*spd,vy:-Math.cos(ang)*spd,w:5,h:14,dmg,col:dmg>=3?'#f80':dmg>=2?'#ff0':'#0ff',piercing:pier});
+    }
+  }
 }
 
 // ── PLASMA BALL ─────────────────────────────────────
@@ -935,6 +915,7 @@ function doDash(){
 //  POWER-UPS
 // ══════════════════════════════════════════════════
 let powerups=[];
+let wingmen=[];
 const PU={
   health:  {col:'#f44',icon:'♥'},  power:   {col:'#ff0',icon:'⚡'},
   shield:  {col:'#0ff',icon:'◎'},  missile: {col:'#f80',icon:'🚀'},
