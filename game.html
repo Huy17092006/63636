@@ -889,16 +889,16 @@ let enemies=[],enemySpawnTimer=0;
 let boss=null,bossLevel=false,enemiesSpawned=0,enemiesForBoss=28;
 
 const ET={
-  scout:    {w:30,h:28,hp:1, spd:2.2,score:100,col:'#f44', shootRate:95,  heavy:false},
-  fighter:  {w:36,h:34,hp:2, spd:1.5,score:200,col:'#f84', shootRate:90,  heavy:false},
-  heavy:    {w:46,h:42,hp:6, spd:.8, score:400,col:'#f0a', shootRate:65,  heavy:false},
-  zigzag:   {w:28,h:26,hp:1, spd:2.5,score:150,col:'#aaf', shootRate:105, heavy:false},
-  kamikaze: {w:24,h:22,hp:1, spd:0,  score:300,col:'#fa0', shootRate:0,   heavy:false},
+  scout:    {w:30,h:28,hp:10, spd:2.2,score:100,col:'#f44', shootRate:95,  heavy:false},
+  fighter:  {w:36,h:34,hp:20, spd:1.5,score:200,col:'#f84', shootRate:90,  heavy:false},
+  heavy:    {w:46,h:42,hp:60, spd:.8, score:400,col:'#f0a', shootRate:65,  heavy:false},
+  zigzag:   {w:28,h:26,hp:10, spd:2.5,score:150,col:'#aaf', shootRate:105, heavy:false},
+  kamikaze: {w:24,h:22,hp:10, spd:0,  score:300,col:'#fa0', shootRate:0,   heavy:false},
   // ── HEAVY ENEMY TYPES ──────────────────────────────
-  mine_layer:{w:40,h:36,hp:3,spd:.6,score:350,col:'#f84',shootRate:0,heavy:true,mineCd:0,mineRate:80},
-  laser_ship:{w:42,h:38,hp:4,spd:.7,score:450,col:'#f66',shootRate:0,heavy:true,laserCd:0,laserRate:120,chargeTimer:0},
-  artillery: {w:50,h:44,hp:8,spd:.5,score:600,col:'#d4f',shootRate:0,heavy:true,shellCd:0,shellRate:150},
-  carrier:   {w:56,h:50,hp:10,spd:.4,score:800,col:'#48f',shootRate:0,heavy:true,spawnCd:0,spawnRate:200,drones:0},
+  mine_layer:{w:40,h:36,hp:30,spd:.6,score:350,col:'#f84',shootRate:0,heavy:true,mineCd:0,mineRate:80},
+  laser_ship:{w:42,h:38,hp:40,spd:.7,score:450,col:'#f66',shootRate:0,heavy:true,laserCd:0,laserRate:120,chargeTimer:0},
+  artillery: {w:50,h:44,hp:80,spd:.5,score:600,col:'#d4f',shootRate:0,heavy:true,shellCd:0,shellRate:150},
+  carrier:   {w:56,h:50,hp:100,spd:.4,score:800,col:'#48f',shootRate:0,heavy:true,spawnCd:0,spawnRate:200,drones:0},
 };
 
 function spawnEnemy(){
