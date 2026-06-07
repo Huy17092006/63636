@@ -1526,7 +1526,7 @@ function updateBoss(){
       b.shootCd--;
       if(b.shootCd<=0){
         b.burstActive=true;
-        b.burstTimer=b.enraged?240:300; // burst lasts 4s/5s
+        b.burstTimer=300; // burst lasts 5s
         b.burstCd=0;
         beep(200,.06,'square',.06);
       }
@@ -1534,7 +1534,7 @@ function updateBoss(){
       b.burstTimer--;
       if(b.burstTimer<=0){
         b.burstActive=false;
-        b.shootCd=b.enraged?120:180; // 2s/3s rest between bursts
+        b.shootCd=b.enraged?80:120; // 1.3s/2s rest between bursts
       } else {
         b.burstCd--;
         if(b.burstCd<=0){
@@ -1725,7 +1725,7 @@ function update(){
 
   // normal shoot
   P.shootCd=Math.max(0,P.shootCd-1);
-  if((keys[' ']||keys['Space'])&&P.shootCd<=0){shootPlayer();P.shootCd=6;}
+  if(P.shootCd<=0){shootPlayer();P.shootCd=6;}
 
   // heavy weapons
   if(just('1'))firePlasma();
