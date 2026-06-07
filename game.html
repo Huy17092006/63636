@@ -55,19 +55,7 @@
 
   /* ── Mobile controls ── */
   #mobileCtrl{position:absolute;inset:0;pointer-events:none;display:none;z-index:20}
-  #joystickZone{
-    position:absolute;bottom:22px;left:14px;
-    width:118px;height:118px;border-radius:50%;
-    background:rgba(0,255,255,.07);border:2px solid rgba(0,255,255,.25);
-    pointer-events:all;touch-action:none;
-  }
-  #joystickKnob{
-    position:absolute;top:50%;left:50%;
-    width:44px;height:44px;border-radius:50%;
-    margin:-22px 0 0 -22px;
-    background:radial-gradient(circle,rgba(0,255,255,.75),rgba(0,140,140,.3));
-    border:2px solid #0ff;box-shadow:0 0 12px #0ff5;pointer-events:none;
-  }
+
   .mbtn{
     position:absolute;pointer-events:all;touch-action:none;
     width:54px;height:54px;border-radius:10px;
@@ -116,7 +104,7 @@
   </div>
   <!-- Mobile controls (shown only during gameplay on touch devices) -->
   <div id="mobileCtrl">
-    <div id="joystickZone"><div id="joystickKnob"></div></div>
+
     <div class="mbtn" id="mb1"><span class="bicon">①</span><span class="blabel">PLASMA</span></div>
     <div class="mbtn" id="mb2"><span class="bicon">②</span><span class="blabel">BOLT</span></div>
     <div class="mbtn" id="mb3"><span class="bicon">③</span><span class="blabel">SHOT</span></div>
@@ -164,6 +152,8 @@ let hiScore=getScores()[0]?.score||0;
 
 // ── Keys ───────────────────────────────────────────
 const keys={},_prev={};
+// Touch drag state
+let pTouchX=null,pTouchY=null,pDragTid=-1;
 addEventListener('keydown',e=>{
   keys[e.key]=true;
   if(' ArrowUp ArrowDown'.includes(e.key))e.preventDefault();
@@ -677,6 +667,14 @@ function drawF22(x,y,glowCol){
     ctx.closePath();ctx.fill();
     ctx.restore();
   });
+
+  // Touch drag indicator: pulsing ring when grabbed
+  if(pDragTid!==-1){
+    const pr=32+Math.sin(frameCount*.18)*5;
+    ctx.beginPath();ctx.arc(0,0,pr,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(0,255,255,${.4+Math.sin(frameCount*.18)*.3})`;
+    ctx.lineWidth=2;ctx.shadowColor='#0ff';ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
+  }
 
   ctx.restore();ctx.shadowBlur=0;
 }
@@ -1828,10 +1826,19 @@ function update(){
   if(state!==GS.PLAYING)return;
   frameCount++;
 
-  if((keys['ArrowLeft']||keys['a']||keys['A'])&&P.x>P.w/2+5)P.x-=P.speed;
-  if((keys['ArrowRight']||keys['d']||keys['D'])&&P.x<W-P.w/2-5)P.x+=P.speed;
-  if((keys['ArrowUp']||keys['w']||keys['W'])&&P.y>P.h/2+5)P.y-=P.speed;
-  if((keys['ArrowDown']||keys['s']||keys['S'])&&P.y<H-P.h/2-5)P.y+=P.speed;
+  if(pTouchX!==null){
+    // Touch drag: ship smoothly follows finger
+    const spd=16;
+    const tx=Math.max(P.w/2+5,Math.min(W-P.w/2-5,pTouchX));
+    const ty=Math.max(P.h/2+5,Math.min(H-P.h/2-5,pTouchY));
+    P.x+=Math.max(-spd,Math.min(spd,tx-P.x));
+    P.y+=Math.max(-spd,Math.min(spd,ty-P.y));
+  }else{
+    if((keys['ArrowLeft']||keys['a']||keys['A'])&&P.x>P.w/2+5)P.x-=P.speed;
+    if((keys['ArrowRight']||keys['d']||keys['D'])&&P.x<W-P.w/2-5)P.x+=P.speed;
+    if((keys['ArrowUp']||keys['w']||keys['W'])&&P.y>P.h/2+5)P.y-=P.speed;
+    if((keys['ArrowDown']||keys['s']||keys['S'])&&P.y<H-P.h/2-5)P.y+=P.speed;
+  }
 
   if(just('Shift'))doDash();
   if(P.dashing){
@@ -2002,6 +2009,7 @@ function startGame(){
   plasmas=[];lightnings=[];railgunBeams=[];laserBeam=null;
   eMines=[];eShells=[];eLaserBeams=[];
   boss=null;bossBarEl.style.display='none';
+  pTouchX=null;pTouchY=null;pDragTid=-1;
   Object.assign(P,{x:W/2,y:H-110,hp:10,missiles:3,bombs:2,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[]});
   Object.assign(WEAPONS.plasma,   {ammo:3,cd:0});
   Object.assign(WEAPONS.lightning,{ammo:4,cd:0});
@@ -2083,47 +2091,53 @@ resizeGame();
 function initMobileControls(){
   if(!_isTouch())return;
 
-  // Canvas tap → menu navigation
-  canvas.addEventListener('touchstart',e=>{
-    const t=e.changedTouches[0];
+  // Helper: screen coords → game canvas coords
+  function s2g(clientX,clientY){
     const r=canvas.getBoundingClientRect();
-    const cx=(t.clientX-r.left)*(480/r.width);
-    const cy=(t.clientY-r.top)*(700/r.height);
-    _handleCanvasTouch(cx,cy);
+    return{x:(clientX-r.left)*(480/r.width),y:(clientY-r.top)*(700/r.height)};
+  }
+
+  // Canvas touch: drag ship during play, menu nav otherwise
+  canvas.addEventListener('touchstart',e=>{
+    if(state===GS.PLAYING){
+      for(const t of e.changedTouches){
+        if(pDragTid!==-1)continue;
+        const{x,y}=s2g(t.clientX,t.clientY);
+        // Grab if touching near the ship (80px radius)
+        if(Math.hypot(x-P.x,y-P.y)<80){
+          pDragTid=t.identifier;pTouchX=x;pTouchY=y;
+        }
+      }
+    }else{
+      const t=e.changedTouches[0];
+      const{x,y}=s2g(t.clientX,t.clientY);
+      _handleCanvasTouch(x,y);
+    }
     e.preventDefault();
   },{passive:false});
 
-  // Joystick
-  const jZone=$('joystickZone'),jKnob=$('joystickKnob');
-  let jTid=-1,jCx=0,jCy=0;const JR=44;
-  function _jUpdate(cx,cy){
-    let dx=cx-jCx,dy=cy-jCy,d=Math.hypot(dx,dy);
-    if(d>JR){dx*=JR/d;dy*=JR/d;}
-    jKnob.style.transform=`translate(${dx}px,${dy}px)`;
-    const th=JR*.28;
-    keys['ArrowLeft']=dx<-th;keys['ArrowRight']=dx>th;
-    keys['ArrowUp']=dy<-th;keys['ArrowDown']=dy>th;
-  }
-  function _jClear(){
-    jTid=-1;jKnob.style.transform='';
-    ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].forEach(k=>keys[k]=false);
-  }
-  jZone.addEventListener('touchstart',e=>{
-    const t=e.changedTouches[0];
-    jTid=t.identifier;
-    const r=jZone.getBoundingClientRect();
-    jCx=r.left+r.width/2;jCy=r.top+r.height/2;
-    _jUpdate(t.clientX,t.clientY);e.preventDefault();
-  },{passive:false});
-  jZone.addEventListener('touchmove',e=>{
-    for(const t of e.changedTouches)if(t.identifier===jTid){_jUpdate(t.clientX,t.clientY);}
+  canvas.addEventListener('touchmove',e=>{
+    if(state!==GS.PLAYING)return;
+    for(const t of e.changedTouches){
+      if(t.identifier===pDragTid){
+        const{x,y}=s2g(t.clientX,t.clientY);
+        pTouchX=x;pTouchY=y;
+      }
+    }
     e.preventDefault();
   },{passive:false});
-  jZone.addEventListener('touchend',e=>{
-    for(const t of e.changedTouches)if(t.identifier===jTid)_jClear();
+
+  canvas.addEventListener('touchend',e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===pDragTid){pDragTid=-1;pTouchX=null;pTouchY=null;}
+    }
     e.preventDefault();
   },{passive:false});
-  jZone.addEventListener('touchcancel',e=>{_jClear();e.preventDefault();},{passive:false});
+
+  canvas.addEventListener('touchcancel',e=>{
+    pDragTid=-1;pTouchX=null;pTouchY=null;
+    e.preventDefault();
+  },{passive:false});
 
   // Helper: tap button
   function _btn(id,onDown,onUp){
