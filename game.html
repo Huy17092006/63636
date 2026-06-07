@@ -466,7 +466,6 @@ const WU_TYPES=[
   {type:'w_spread', col:'#ff0', icon:'⊳', label:'SPR'},
   {type:'w_rapid',  col:'#0f8', icon:'▶', label:'RPD'},
   {type:'w_power',  col:'#f84', icon:'⊕', label:'PWR'},
-  {type:'w_homing', col:'#f0f', icon:'⊙', label:'HOM'},
   {type:'w_pierce', col:'#aff', icon:'▷', label:'PRC'},
 ];
 
@@ -474,7 +473,7 @@ const WU_TYPES=[
 const P={
   x:W/2,y:H-110,w:52,h:44,speed:5,
   hp:10,maxHp:10,
-  shootCd:0,shootRate:10,wShots:1,wSpread:0,wCd:6,wDmg:1,wHoming:false,wPiercing:false,invincible:0,
+  shootCd:0,shootRate:10,wShots:1,wSpread:0,wCd:6,wDmg:1,wPiercing:false,invincible:0,
   shield:false,shieldTimer:0,
   powerLevel:0,powerTimer:0,
   dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,
@@ -663,18 +662,12 @@ let eMines=[],eShells=[],eLaserBeams=[];
 
 function shootPlayer(){
   sfx.shoot();
-  const{wShots:ns,wSpread:sp,wDmg:dmg,wHoming:hom,wPiercing:pier}=P;
+  const{wShots:ns,wSpread:sp,wDmg:dmg,wPiercing:pier}=P;
   for(let i=0;i<ns;i++){
     const off=ns>1?(i-(ns-1)/2)*14:0;
     const ang=ns>1?(i-(ns-1)/2)*sp:0;
     const spd=14;
-    if(hom){
-      const all=[...enemies,...(boss?[boss]:[])];
-      const tgt=all.sort((a,b)=>Math.hypot(a.x-(P.x+off),a.y-P.y)-Math.hypot(b.x-(P.x+off),b.y-P.y))[0]||null;
-      bullets.push({x:P.x+off,y:P.y-P.h/2,vx:0,vy:-12,w:5,h:14,dmg,col:'#f0f',missile:!!tgt,target:tgt,trail:tgt?[]:undefined,piercing:pier});
-    }else{
-      bullets.push({x:P.x+off,y:P.y-P.h/2,vx:Math.sin(ang)*spd,vy:-Math.cos(ang)*spd,w:5,h:14,dmg,col:dmg>=3?'#f80':dmg>=2?'#ff0':'#0ff',piercing:pier});
-    }
+    bullets.push({x:P.x+off,y:P.y-P.h/2,vx:Math.sin(ang)*spd,vy:-Math.cos(ang)*spd,w:5,h:14,dmg,col:dmg>=3?'#f80':dmg>=2?'#ff0':'#0ff',piercing:pier});
   }
 }
 
@@ -783,6 +776,7 @@ function doDash(){
 // ══════════════════════════════════════════════════
 let powerups=[];
 let wingmen=[];
+let lvAllyDrops=0,lvWepDrops=0;
 const PU={
   health:  {col:'#f44',icon:'♥'},  power:   {col:'#ff0',icon:'⚡'},
   shield:  {col:'#0ff',icon:'◎'},  missile: {col:'#f80',icon:'🚀'},
@@ -791,15 +785,18 @@ const PU={
   shotgun: {col:'#fa0',icon:'⊕'},  laserW:  {col:'#ff8',icon:'▌'},
 };
 function spawnPowerup(x,y){
+  const canAlly=wingmen.length<2&&lvAllyDrops<2;
+  const canWep=lvWepDrops<4;
+  if(!canAlly&&!canWep)return;
   let type;
-  if(Math.random()<.6&&wingmen.length<6){
+  if(canAlly&&(Math.random()<.6||!canWep)){
     type='ally_plane';
+  }else if(canWep){
+    type=WU_TYPES[Math.floor(Math.random()*WU_TYPES.length)].type;
   }else{
-    const wu=WU_TYPES[Math.floor(Math.random()*WU_TYPES.length)];
-    const basic=['health','health','shield','score'];
-    type=Math.random()<.65?wu.type:basic[Math.floor(Math.random()*basic.length)];
+    return;
   }
-  const col=type==='ally_plane'?'#4af':(WU_TYPES.find(w=>w.type===type)?.col||PU[type]?.col||'#fff');
+  const col=type==='ally_plane'?'#4af':(WU_TYPES.find(w=>w.type===type)?.col||'#fff');
   powerups.push({x,y,vy:1.4,type,r:14,spin:0,col});
 }
 function updatePowerups(){
@@ -822,19 +819,18 @@ function applyPU(t){
     case 'shield':  P.shield=true;P.shieldTimer=360;break;
     case 'score':   score+=1200*level;break;
     case 'ally_plane':
-      if(wingmen.length<6){
+      if(wingmen.length<2){
+        lvAllyDrops++;
         const idx=wingmen.length;
         const side=idx%2===0?-1:1;
-        const row=Math.floor(idx/2);
-        wingmen.push({x:P.x+side*(50+row*40),y:P.y+30,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
+        wingmen.push({x:P.x+side*54,y:P.y+30,hp:3,maxHp:3,shootCd:20+Math.random()*20,flash:0});
         showMsg('ALLY JOINED!','#4af',1200);
       }break;
-    case 'w_double': P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
-    case 'w_spread': P.wSpread=Math.min(.45,P.wSpread+.1);showMsg('SPREAD!','#ff0',900);break;
-    case 'w_rapid':  P.wCd=Math.max(3,P.wCd-1);showMsg('RAPID FIRE!','#0f8',900);break;
-    case 'w_power':  P.wDmg=Math.min(4,P.wDmg+1);showMsg('POWER UP!','#f84',900);break;
-    case 'w_homing': P.wHoming=true;showMsg('HOMING!','#f0f',900);break;
-    case 'w_pierce': P.wPiercing=true;showMsg('PIERCE!','#aff',900);break;
+    case 'w_double': lvWepDrops++;P.wShots=Math.min(7,P.wShots+1);showMsg('DOUBLE SHOT!','#0ff',900);break;
+    case 'w_spread': lvWepDrops++;P.wSpread=Math.min(.45,P.wSpread+.1);showMsg('SPREAD!','#ff0',900);break;
+    case 'w_rapid':  lvWepDrops++;P.wCd=Math.max(3,P.wCd-1);showMsg('RAPID FIRE!','#0f8',900);break;
+    case 'w_power':  lvWepDrops++;P.wDmg=Math.min(4,P.wDmg+1);showMsg('POWER UP!','#f84',900);break;
+    case 'w_pierce': lvWepDrops++;P.wPiercing=true;showMsg('PIERCE!','#aff',900);break;
   }
   updateHUD();
 }
@@ -859,9 +855,9 @@ function drawWingman(wm){
 }
 function updateWingmen(){
   wingmen.forEach((wm,i)=>{
-    const side=i%2===0?-1:1,row=Math.floor(i/2);
-    const tx=Math.max(24,Math.min(W-24,P.x+side*(52+row*42)));
-    const ty=Math.max(24,Math.min(H-40,P.y+22+row*8));
+    const side=i===0?-1:1;
+    const tx=Math.max(24,Math.min(W-24,P.x+side*54));
+    const ty=Math.max(24,Math.min(H-40,P.y+22));
     wm.x+=(tx-wm.x)*.12;wm.y+=(ty-wm.y)*.12;
     if(wm.flash>0)wm.flash--;
     wm.shootCd--;
@@ -1695,7 +1691,7 @@ function nextLevel(){
     winLoop();
     return;
   }
-  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28+level*6;
+  level++;bossLevel=false;enemiesSpawned=0;enemiesForBoss=28+level*6;lvAllyDrops=0;lvWepDrops=0;
   P.hp=Math.min(P.maxHp,P.hp+1);
   formationTimer=0;enemySpawnTimer=60;
   waveNumber=0;waveState='idle';waveTimer=90;
@@ -1715,7 +1711,6 @@ function updateHUD(){
   let wInfo=`<span style="color:#888">SHOTS:</span><span style="color:#0ff">${P.wShots}</span> `;
   wInfo+=`<span style="color:#888">DMG:</span><span style="color:#f84">${P.wDmg}</span> `;
   wInfo+=`<span style="color:#888">CD:</span><span style="color:#0f8">${P.wCd}</span>`;
-  if(P.wHoming)wInfo+=` <span style="color:#f0f">⊙HOM</span>`;
   if(P.wPiercing)wInfo+=` <span style="color:#aff">▷PRC</span>`;
   if(P.wSpread>0)wInfo+=` <span style="color:#ff0">⊳SPR</span>`;
   if(wingmen.length>0)wInfo+=` <span style="color:#4af">🛩×${wingmen.length}</span>`;
@@ -1901,8 +1896,8 @@ function startGame(){
   eMines=[];eShells=[];eLaserBeams=[];
   boss=null;bossBarEl.style.display='none';
   pTouchX=null;pTouchY=null;pDragTid=-1;
-  wingmen=[];
-  Object.assign(P,{x:W/2,y:H-110,hp:10,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[],wShots:1,wSpread:0,wCd:6,wDmg:1,wHoming:false,wPiercing:false});
+  wingmen=[];lvAllyDrops=0;lvWepDrops=0;
+  Object.assign(P,{x:W/2,y:H-110,hp:10,invincible:0,shield:false,shieldTimer:0,powerLevel:0,powerTimer:0,dashCd:0,dashing:false,dashTimer:0,dashVx:0,dashVy:0,shootCd:0,trail:[],wShots:1,wSpread:0,wCd:6,wDmg:1,wPiercing:false});
   enemySpawnTimer=80;formationTimer=200;
   $('ui').style.display='flex';
   if(_isTouch())$('mobileCtrl').style.display='block';
