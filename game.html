@@ -662,7 +662,7 @@ let eMines=[],eShells=[],eLaserBeams=[];
 
 function shootPlayer(){
   sfx.shoot();
-  const{wShots:ns,wSpread:sp,wDmg:dmg,wPiercing:pier}=P;
+  const{wShots:ns,wSpread:sp,wPiercing:pier}=P;const dmg=P.wDmg*1.2;
   for(let i=0;i<ns;i++){
     const off=ns>1?(i-(ns-1)/2)*14:0;
     const ang=ns>1?(i-(ns-1)/2)*sp:0;
